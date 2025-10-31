@@ -1,0 +1,4182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<title>고속도로 작업관리 v11.0</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+* {margin: 0;padding: 0;box-sizing: border-box;}
+body {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;background: #F5F7FA;color: #333;}
+.page {display: none;min-height: 100vh;padding-bottom: 40px;}
+.page.active {display: block;}
+.header {background: linear-gradient(135deg, #1E5EBA 0%, #2B7DE9 100%);padding: 24px 20px 20px;box-shadow: 0 2px 12px rgba(30,94,186,0.15);}
+.logo {font-size: 28px;font-weight: 800;color: white;margin-bottom: 6px;letter-spacing: 1.5px;}
+.logo-red {color: #FF4444;}
+.logo-yellow {color: #FFD700;}
+.logo-green {color: #4CAF50;}
+.tagline {font-size: 13px;color: rgba(255,255,255,0.9);font-weight: 500;margin-bottom: 16px;}
+.header-info {display: flex;justify-content: space-between;align-items: center;padding-top: 12px;border-top: 1px solid rgba(255,255,255,0.2);}
+.header-left {display: flex;flex-direction: column;gap: 4px;}
+.datetime {font-size: 14px;color: rgba(255,255,255,0.95);font-weight: 600;}
+.user-info {display: flex;align-items: center;gap: 8px;font-size: 13px;color: rgba(255,255,255,0.85);}
+.dept-badge {background: rgba(255,255,255,0.25);padding: 4px 10px;border-radius: 12px;font-weight: 700;font-size: 12px;}
+.settings-icon {width: 40px;height: 40px;background: rgba(255,255,255,0.15);border-radius: 12px;display: flex;align-items: center;justify-content: center;font-size: 22px;cursor: pointer;transition: all 0.2s;border: 1px solid rgba(255,255,255,0.2);}
+.settings-icon:active {background: rgba(255,255,255,0.25);transform: scale(0.95);}
+.queue-badge {padding: 14px 20px;margin: 0 20px;margin-top: -10px;margin-bottom: 20px;border-radius: 12px;font-size: 14px;font-weight: 700;text-align: center;box-shadow: 0 4px 12px rgba(0,0,0,0.1);display: none;cursor: pointer;}
+.queue-badge.show {display: block;}
+.queue-badge.normal {background: linear-gradient(135deg, #FFB300, #FFC107);color: #333;}
+.queue-badge.warning {background: linear-gradient(135deg, #FF9800, #FF6B00);color: white;}
+
+.main-action {padding: 0 20px 20px;}
+.big-card {background: white;border-radius: 16px;padding: 32px 24px;box-shadow: 0 4px 16px rgba(0,0,0,0.08);cursor: pointer;transition: all 0.3s;border: 2px solid #E3F2FD;}
+.big-card:active {transform: scale(0.98);}
+.card-header {display: flex;align-items: center;justify-content: space-between;margin-bottom: 16px;}
+.card-label {font-size: 12px;color: #1E5EBA;margin-bottom: 6px;font-weight: 700;text-transform: uppercase;letter-spacing: 1px;}
+.card-title {font-size: 26px;font-weight: 800;color: #1E5EBA;}
+.card-icon {font-size: 52px;}
+.card-desc {font-size: 14px;color: #666;line-height: 1.5;}
+
+.sub-actions {display: grid;grid-template-columns: 1fr 1fr;gap: 12px;padding: 0 20px 24px;}
+.sub-card {background: white;border-radius: 14px;padding: 28px 20px;text-align: center;cursor: pointer;box-shadow: 0 2px 8px rgba(0,0,0,0.06);transition: all 0.3s;border: 2px solid #F0F0F0;}
+.sub-card:active {transform: scale(0.96);}
+.sub-card-icon {font-size: 46px;margin-bottom: 12px;}
+.sub-card-title {font-size: 17px;font-weight: 700;color: #333;margin-bottom: 6px;}
+.sub-card-desc {font-size: 12px;color: #999;}
+
+.section {padding: 0 20px 24px;}
+.section-title {font-size: 15px;font-weight: 700;color: #333;margin-bottom: 14px;}
+.feature-grid {display: grid;grid-template-columns: repeat(4, 1fr);gap: 10px;}
+.feature-card {background: white;border-radius: 12px;padding: 20px 14px;text-align: center;cursor: pointer;transition: all 0.3s;box-shadow: 0 2px 6px rgba(0,0,0,0.06);border: 2px solid #F5F5F5;}
+.feature-card:active {transform: scale(0.94);}
+.feature-icon {font-size: 32px;margin-bottom: 8px;}
+.feature-name {font-size: 13px;font-weight: 600;color: #333;}
+
+.stats-grid {display: grid;grid-template-columns: repeat(2, 1fr);gap: 12px;}
+.stat-card {background: white;border-radius: 14px;padding: 22px 20px;text-align: center;cursor: pointer;transition: all 0.3s;box-shadow: 0 2px 8px rgba(0,0,0,0.06);border: 2px solid #F0F0F0;}
+.stat-card:active {transform: scale(0.98);}
+.stat-icon {font-size: 36px;margin-bottom: 10px;}
+.stat-value {font-size: 28px;font-weight: 800;color: #1E5EBA;margin-bottom: 6px;}
+.stat-label {font-size: 13px;color: #666;font-weight: 500;}
+
+/* 유형별 통계 카드 스타일 */
+.category-stats-grid {display: grid;grid-template-columns: 1fr;gap: 16px;margin-bottom: 20px;}
+.category-stat-card {background: white;border-radius: 14px;padding: 20px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);border-left: 4px solid #2196F3;}
+.category-stat-card.facility {border-left-color: #FF9800;}
+.category-stat-card.traffic {border-left-color: #4CAF50;}
+.category-stat-card.road {border-left-color: #2196F3;}
+.category-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 16px;}
+.category-name {font-size: 18px;font-weight: 700;color: #333;}
+.category-icon {font-size: 32px;}
+.category-stats-row {display: grid;grid-template-columns: repeat(3, 1fr);gap: 12px;}
+.category-stat-item {text-align: center;padding: 12px;background: #F8F9FA;border-radius: 8px;}
+.category-stat-value {font-size: 20px;font-weight: 800;color: #1E5EBA;margin-bottom: 4px;}
+.category-stat-label {font-size: 11px;color: #666;font-weight: 600;}
+.status-complete {color: #4CAF50;}
+.status-progress {color: #FF9800;}
+
+.top-bar {padding: 18px 20px;display: flex;align-items: center;gap: 14px;background: white;box-shadow: 0 2px 8px rgba(0,0,0,0.06);}
+.back-btn {background: none;border: none;color: #1E5EBA;font-size: 28px;cursor: pointer;padding: 6px;font-weight: bold;}
+.page-title {font-size: 19px;font-weight: 700;color: #333;flex: 1;}
+
+.form {padding: 24px 20px;}
+.form-group {margin-bottom: 20px;}
+.form-label {display: block;font-size: 14px;font-weight: 700;color: #333;margin-bottom: 10px;}
+.required {color: #F44336;}
+.form-input, .form-select, .form-textarea {width: 100%;padding: 14px 16px;border: 2px solid #E0E0E0;border-radius: 10px;background: white;color: #333;font-size: 15px;font-family: inherit;transition: border-color 0.2s;}
+.form-input:focus, .form-select:focus, .form-textarea:focus {outline: none;border-color: #2B7DE9;}
+.form-input:disabled, .form-select:disabled, .form-textarea:disabled {background: #F5F5F5;color: #999;}
+.form-input::placeholder, .form-textarea::placeholder {color: #BBB;}
+.form-select {cursor: pointer;}
+.form-textarea {min-height: 120px;resize: vertical;line-height: 1.6;}
+
+.datetime-grid {display: grid;grid-template-columns: 1fr 1fr;gap: 10px;margin-top: 12px;}
+.datetime-item {display: flex;flex-direction: column;gap: 8px;}
+.datetime-item label {font-size: 13px;color: #666;font-weight: 600;}
+.datetime-input-group {display: flex;gap: 6px;}
+.datetime-input-group input {flex: 1;padding: 12px;font-size: 14px;}
+
+.photos {display: grid;grid-template-columns: repeat(3, 1fr);gap: 10px;margin-top: 12px;}
+.photo {aspect-ratio: 1;background: #F5F5F5;border: 2px solid #E0E0E0;border-radius: 10px;position: relative;overflow: hidden;}
+.photo img {width: 100%;height: 100%;object-fit: cover;}
+.photo-remove {position: absolute;top: 6px;right: 6px;width: 26px;height: 26px;border-radius: 50%;background: rgba(244,67,54,0.95);color: white;border: none;font-size: 18px;cursor: pointer;z-index: 10;}
+.add-photo-btn {aspect-ratio: 1;background: white;border: 2px dashed #CCC;border-radius: 10px;display: flex;flex-direction: column;align-items: center;justify-content: center;cursor: pointer;transition: all 0.3s;}
+.add-photo-btn:active {border-color: #2B7DE9;background: #F0F7FF;}
+.add-photo-icon {font-size: 34px;margin-bottom: 4px;}
+.add-photo-text {font-size: 12px;color: #999;font-weight: 600;}
+
+.submit {padding: 20px;background: white;box-shadow: 0 -2px 8px rgba(0,0,0,0.06);}
+.submit-btn {width: 100%;padding: 18px;background: linear-gradient(135deg, #2B7DE9, #64B5F6);color: white;border: none;border-radius: 12px;font-size: 18px;font-weight: 700;cursor: pointer;transition: all 0.3s;box-shadow: 0 4px 12px rgba(43,125,233,0.3);}
+.submit-btn:active {transform: scale(0.98);}
+.submit-btn:disabled {background: #CCC;cursor: not-allowed;}
+
+.modal {display: none;position: fixed;top: 0;left: 0;right: 0;bottom: 0;background: rgba(0,0,0,0.6);z-index: 1000;align-items: center;justify-content: center;}
+.modal.show {display: flex;}
+.modal-content {background: white;border-radius: 20px;padding: 28px 24px;width: 90%;max-width: 400px;box-shadow: 0 8px 32px rgba(0,0,0,0.2);}
+.modal-title {font-size: 20px;font-weight: 700;color: #333;margin-bottom: 24px;text-align: center;}
+.modal-buttons {display: flex;flex-direction: column;gap: 12px;}
+.modal-btn {padding: 16px;border-radius: 12px;font-size: 16px;font-weight: 700;cursor: pointer;transition: all 0.3s;border: none;}
+.modal-btn-primary {background: linear-gradient(135deg, #2B7DE9, #64B5F6);color: white;}
+.modal-btn-secondary {background: #F5F5F5;color: #666;}
+.modal-btn:active {transform: scale(0.98);}
+
+.modal-content-large {background: white;border-radius: 20px;width: 90%;max-width: 500px;box-shadow: 0 8px 32px rgba(0,0,0,0.2);max-height: 85vh;display: flex;flex-direction: column;}
+.modal-header {padding: 24px 24px 16px;border-bottom: 2px solid #F0F0F0;display: flex;justify-content: space-between;align-items: center;}
+.modal-close {background: none;border: none;font-size: 32px;color: #999;cursor: pointer;padding: 0;width: 36px;height: 36px;display: flex;align-items: center;justify-content: center;transition: all 0.2s;}
+.modal-close:hover {color: #333;}
+.modal-body {padding: 24px;overflow-y: auto;flex: 1;}
+.modal-footer {padding: 16px 24px;border-top: 2px solid #F0F0F0;display: flex;flex-direction: column;gap: 10px;}
+
+.info-card {background: white;border-radius: 14px;padding: 32px 24px;margin: 16px 20px;text-align: center;box-shadow: 0 2px 8px rgba(0,0,0,0.06);}
+.info-icon {font-size: 56px;margin-bottom: 16px;}
+.info-title {font-size: 20px;font-weight: 700;color: #333;margin-bottom: 10px;}
+.info-desc {font-size: 14px;color: #999;line-height: 1.6;}
+
+.dispatch-status-card {background: linear-gradient(135deg, #667EEA, #764BA2);border-radius: 16px;padding: 24px 20px;margin: 0 20px 20px;box-shadow: 0 4px 16px rgba(102,126,234,0.3);}
+.dispatch-status-text {font-size: 16px;color: rgba(255,255,255,0.9);margin-bottom: 12px;}
+.dispatch-timer {font-size: 36px;font-weight: 800;color: white;text-align: center;letter-spacing: 2px;margin-bottom: 16px;}
+.dispatch-info {background: rgba(255,255,255,0.15);border-radius: 12px;padding: 16px;margin-top: 16px;display: none;}
+.dispatch-info.show {display: flex;justify-content: space-between;}
+.dispatch-info-item {display: flex;flex-direction: column;gap: 4px;}
+.dispatch-info-label {font-size: 11px;color: rgba(255,255,255,0.7);font-weight: 600;}
+.dispatch-info-value {font-size: 15px;font-weight: 800;color: white;}
+.dispatch-btn {width: 100%;padding: 18px;border: none;border-radius: 12px;font-size: 18px;font-weight: 700;cursor: pointer;transition: all 0.3s;box-shadow: 0 4px 12px rgba(0,0,0,0.2);}
+.dispatch-btn.start {background: linear-gradient(135deg, #FF6F00, #FF8F00);color: white;}
+.dispatch-btn.end {background: linear-gradient(135deg, #43A047, #66BB6A);color: white;}
+.dispatch-btn:active {transform: scale(0.98);}
+
+.mission-status-card {background: linear-gradient(135deg, #E91E63, #F06292);border-radius: 16px;padding: 24px 20px;margin: 0 20px 20px;box-shadow: 0 4px 16px rgba(233,30,99,0.3);}
+
+.dispatch-history {margin-top: 24px;padding: 0 20px;}
+.history-item {background: white;border-radius: 12px;padding: 16px;margin-bottom: 12px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);border-left: 4px solid #FF9800;cursor: pointer;transition: all 0.2s;}
+.history-item:active {transform: scale(0.98);background: #F8F9FA;}
+.history-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 12px;}
+.history-date {font-size: 15px;font-weight: 700;color: #333;}
+.history-duration {font-size: 14px;font-weight: 800;color: #FF6F00;}
+.history-times {display: flex;gap: 16px;font-size: 13px;color: #666;}
+.history-time-item {display: flex;align-items: center;gap: 4px;}
+.history-work-count {margin-top: 8px;padding: 6px 12px;background: #E8F5E9;border-radius: 6px;font-size: 12px;color: #2E7D32;font-weight: 600;text-align: center;}
+
+.filter-tabs {display: flex;gap: 8px;padding: 16px 20px 12px;background: white;overflow-x: auto;border-bottom: 2px solid #F0F0F0;}
+.filter-tab {padding: 8px 16px;border-radius: 20px;font-size: 14px;font-weight: 600;cursor: pointer;white-space: nowrap;transition: all 0.2s;border: 2px solid #E0E0E0;background: white;color: #666;}
+.filter-tab.active {background: #2B7DE9;color: white;border-color: #2B7DE9;}
+
+.date-filter {padding: 16px 20px;background: white;border-bottom: 2px solid #F0F0F0;}
+.date-filter-title {font-size: 14px;font-weight: 700;color: #333;margin-bottom: 10px;}
+.date-filter-inputs {display: grid;grid-template-columns: 1fr auto 1fr;gap: 8px;align-items: center;}
+.date-filter-inputs input {padding: 10px;border: 2px solid #E0E0E0;border-radius: 8px;font-size: 14px;}
+.date-filter-separator {font-size: 14px;color: #666;font-weight: 600;}
+
+.list-header {padding: 18px 20px;background: white;box-shadow: 0 2px 6px rgba(0,0,0,0.04);}
+.list-count {font-size: 16px;color: #1E5EBA;font-weight: 700;}
+
+.work-list {padding: 16px 20px;}
+.work-item {background: white;border-radius: 12px;padding: 18px;margin-bottom: 12px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);border: 2px solid #F0F0F0;cursor: pointer;transition: all 0.2s;}
+.work-item:active {transform: scale(0.98);background: #F8F9FA;}
+.work-item.inspection {border-left: 4px solid #4CAF50;background: #F1F8F4;}
+.work-item.work {border-left: 4px solid #2196F3;}
+.work-item.dispatch {border-left: 4px solid #FF9800;background: #FFF8F0;}
+.work-item.mission {border-left: 4px solid #E91E63;background: #FCE4EC;}
+.work-item-header {display: flex;justify-content: space-between;align-items: flex-start;margin-bottom: 12px;}
+.work-badge {padding: 5px 12px;border-radius: 10px;font-size: 12px;font-weight: 700;background: #2B7DE9;color: white;}
+.work-badge.inspection {background: #4CAF50;}
+.work-badge.dispatch {background: #FF9800;}
+.work-badge.mission {background: #E91E63;}
+.work-badge.work {background: #2196F3;}
+.work-time {font-size: 13px;color: #666;font-weight: 600;}
+.work-info {display: flex;flex-direction: column;gap: 8px;}
+.work-location {font-size: 16px;font-weight: 700;color: #333;}
+.work-detail {font-size: 14px;color: #666;line-height: 1.5;}
+.work-meta {display: flex;gap: 12px;margin-top: 8px;font-size: 12px;color: #999;}
+.work-photos-preview {display: flex;gap: 6px;margin-top: 8px;}
+.work-photo-thumb {width: 60px;height: 60px;border-radius: 8px;overflow: hidden;border: 2px solid #E0E0E0;}
+.work-photo-thumb img {width: 100%;height: 100%;object-fit: cover;}
+
+.detail-section {padding: 20px;background: white;margin-bottom: 10px;}
+.detail-title {font-size: 16px;font-weight: 700;color: #333;margin-bottom: 16px;padding-bottom: 12px;border-bottom: 2px solid #F0F0F0;}
+.detail-item {margin-bottom: 16px;}
+.detail-label {font-size: 13px;color: #666;font-weight: 600;margin-bottom: 6px;}
+.detail-value {font-size: 15px;color: #333;line-height: 1.6;}
+.detail-photos {display: grid;grid-template-columns: repeat(3, 1fr);gap: 10px;margin-top: 12px;}
+.detail-photo {aspect-ratio: 1;background: #F5F5F5;border: 2px solid #E0E0E0;border-radius: 10px;overflow: hidden;cursor: pointer;}
+.detail-photo img {width: 100%;height: 100%;object-fit: cover;}
+
+.checklist {padding: 0;}
+.checklist-item {padding: 18px 20px;border-bottom: 1px solid #F0F0F0;cursor: pointer;transition: all 0.2s;display: flex;align-items: center;gap: 14px;background: white;}
+.checklist-item:active {background: #F8F9FA;}
+.checklist-item.checked {background: #F1F8F4;}
+.checklist-item input[type="checkbox"] {width: 24px;height: 24px;cursor: pointer;accent-color: #4CAF50;}
+.checklist-label {font-size: 15px;color: #333;font-weight: 500;flex: 1;}
+
+.settings-item {padding: 20px;background: white;border-radius: 12px;margin-bottom: 16px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);}
+.settings-item-title {font-size: 15px;font-weight: 700;color: #333;margin-bottom: 16px;}
+
+.radio-group {display: flex;flex-direction: column;gap: 12px;}
+.radio-option {padding: 16px;border: 2px solid #E0E0E0;border-radius: 10px;cursor: pointer;transition: all 0.2s;display: flex;align-items: center;gap: 12px;}
+.radio-option.selected {border-color: #2B7DE9;background: #F0F7FF;}
+.radio-option input[type="radio"] {width: 20px;height: 20px;cursor: pointer;accent-color: #2B7DE9;}
+.radio-label {flex: 1;}
+.radio-title {font-size: 15px;font-weight: 700;color: #333;margin-bottom: 4px;}
+.radio-desc {font-size: 13px;color: #666;}
+
+.checkbox-option {padding: 16px;border: 2px solid #E0E0E0;border-radius: 10px;cursor: pointer;transition: all 0.2s;display: flex;align-items: center;gap: 12px;margin-bottom: 12px;}
+.checkbox-option.selected {border-color: #2B7DE9;background: #F0F7FF;}
+.checkbox-option input[type="checkbox"] {width: 20px;height: 20px;cursor: pointer;accent-color: #2B7DE9;}
+
+.warning-box {margin-top: 16px;padding: 16px;background: #FFF3E0;border-left: 4px solid #FF9800;border-radius: 8px;display: none;}
+.warning-box.show {display: block;}
+.warning-text {font-size: 14px;color: #E65100;font-weight: 600;line-height: 1.6;}
+
+.queue-list {padding: 16px 20px;}
+.queue-item {background: white;border-radius: 12px;padding: 18px;margin-bottom: 12px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);border: 2px solid #FFE0B2;border-left: 4px solid #FF9800;}
+.queue-item-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 12px;}
+.queue-badge-small {padding: 5px 12px;border-radius: 10px;font-size: 12px;font-weight: 700;background: #FF9800;color: white;}
+.queue-time {font-size: 13px;color: #666;font-weight: 600;}
+.queue-info {display: flex;flex-direction: column;gap: 8px;}
+.queue-location {font-size: 16px;font-weight: 700;color: #333;}
+.queue-detail {font-size: 14px;color: #666;line-height: 1.5;}
+.queue-actions {display: flex;gap: 8px;margin-top: 12px;}
+.queue-action-btn {flex: 1;padding: 12px;border: none;border-radius: 8px;font-size: 14px;font-weight: 700;cursor: pointer;transition: all 0.2s;}
+.queue-upload-btn {background: #4CAF50;color: white;}
+.queue-delete-btn {background: #F44336;color: white;}
+.queue-action-btn:active {transform: scale(0.96);}
+
+.empty-state {text-align: center;padding: 60px 20px;}
+.empty-icon {font-size: 64px;margin-bottom: 16px;opacity: 0.5;}
+.empty-text {font-size: 16px;color: #999;font-weight: 600;}
+
+.admin-indicator {display: inline-block;padding: 4px 10px;background: #FF6F00;color: white;border-radius: 6px;font-size: 11px;font-weight: 700;margin-left: 8px;}
+
+/* 근태관리 개선 */
+.attendance-card {background: white;border-radius: 16px;padding: 24px 20px;margin: 0 20px 20px;box-shadow: 0 4px 16px rgba(0,0,0,0.08);border: 2px solid #E3F2FD;}
+.attendance-user {font-size: 20px;font-weight: 800;color: #1E5EBA;margin-bottom: 16px;text-align: center;}
+.attendance-status-grid {display: grid;grid-template-columns: 1fr 1fr;gap: 12px;margin-bottom: 16px;}
+.attendance-status-item {text-align: center;padding: 16px;background: #F8F9FA;border-radius: 12px;}
+.attendance-status-label {font-size: 12px;color: #666;margin-bottom: 6px;}
+.attendance-status-value {font-size: 18px;font-weight: 800;color: #1E5EBA;}
+.alcohol-status {display: inline-block;padding: 8px 16px;border-radius: 20px;font-size: 14px;font-weight: 700;margin-top: 8px;}
+.alcohol-status.confirmed {background: #E8F5E9;color: #2E7D32;}
+.alcohol-status.detected {background: #FFEBEE;color: #C62828;}
+
+.attendance-list {padding: 16px 20px;}
+.attendance-item {background: white;border-radius: 12px;padding: 18px;margin-bottom: 12px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);border-left: 4px solid #1E5EBA;}
+.attendance-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 12px;}
+.attendance-name {font-size: 16px;font-weight: 700;color: #333;}
+.attendance-status {padding: 4px 10px;border-radius: 8px;font-size: 12px;font-weight: 700;}
+.attendance-status.working {background: #E8F5E9;color: #2E7D32;}
+.attendance-status.off {background: #F5F5F5;color: #999;}
+.attendance-times {display: flex;gap: 16px;font-size: 13px;color: #666;margin-top: 8px;}
+.alcohol-badge {display: inline-block;padding: 4px 8px;border-radius: 6px;font-size: 11px;font-weight: 700;margin-left: 8px;}
+.alcohol-badge.confirmed {background: #E8F5E9;color: #2E7D32;}
+.alcohol-badge.detected {background: #FFEBEE;color: #C62828;}
+.leave-badge {display: inline-block;padding: 4px 8px;border-radius: 6px;font-size: 11px;font-weight: 700;margin-left: 8px;background: #FFF3E0;color: #E65100;}
+
+.action-buttons {padding: 20px;display: flex;gap: 10px;}
+.action-btn {flex: 1;padding: 16px;border: none;border-radius: 12px;font-size: 16px;font-weight: 700;cursor: pointer;transition: all 0.3s;}
+.action-btn-primary {background: linear-gradient(135deg, #2B7DE9, #64B5F6);color: white;}
+.action-btn-secondary {background: #F5F5F5;color: #666;}
+.action-btn:active {transform: scale(0.98);}
+
+.edit-mode-indicator {background: #FFF3E0;padding: 12px 20px;border-left: 4px solid #FF9800;margin: 0 20px 20px;border-radius: 8px;font-size: 14px;color: #E65100;font-weight: 600;}
+
+/* 일일 점검일지 탭 스타일 */
+.inspection-tabs {display: flex;gap: 8px;padding: 16px 20px;background: white;border-bottom: 2px solid #F0F0F0;overflow-x: auto;}
+.inspection-tab {padding: 10px 20px;border-radius: 20px;font-size: 14px;font-weight: 600;cursor: pointer;white-space: nowrap;transition: all 0.2s;border: 2px solid #E0E0E0;background: white;color: #666;}
+.inspection-tab.active {background: #4CAF50;color: white;border-color: #4CAF50;}
+
+.inspection-content {display: none;}
+.inspection-content.active {display: block;}
+
+.checklist-summary {padding: 16px 20px;background: #F8F9FA;border-bottom: 2px solid #E0E0E0;}
+.summary-text {font-size: 14px;color: #666;text-align: center;}
+.summary-count {font-weight: 800;color: #4CAF50;font-size: 18px;}
+
+/* 차트 관련 스타일 추가 */
+.stats-filter-tabs {display: flex;gap: 8px;padding: 16px 20px;background: white;overflow-x: auto;border-bottom: 2px solid #F0F0F0;margin-bottom: 0;}
+.stats-filter-tab {padding: 8px 16px;border-radius: 20px;font-size: 14px;font-weight: 600;cursor: pointer;white-space: nowrap;transition: all 0.2s;border: 2px solid #E0E0E0;background: white;color: #666;}
+.stats-filter-tab.active {background: #2B7DE9;color: white;border-color: #2B7DE9;}
+.chart-container {background: white;border-radius: 14px;padding: 20px;margin-bottom: 20px;box-shadow: 0 2px 8px rgba(0,0,0,0.06);}
+.chart-title {font-size: 16px;font-weight: 700;color: #333;margin-bottom: 16px;padding-bottom: 12px;border-bottom: 2px solid #F0F0F0;}
+.chart-wrapper {position: relative;height: 280px;}
+canvas {max-height: 280px;}
+
+
+/* 일일점검 작업 아이템 스타일 */
+.work-item.daily-inspection {border-left: 4px solid #9C27B0;background: #F3E5F5;}
+.work-badge.daily-inspection {background: #9C27B0;}
+
+/* 보고서 출력 전용 스타일 */
+@media print {
+  .header, .top-bar, .submit, .action-buttons, .no-print {
+    display: none !important;
+  }
+  
+  .report-page {
+    display: block !important;
+    page-break-after: always;
+  }
+  
+  body {
+    background: white;
+  }
+  
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+  
+  .report-table th,
+  .report-table td {
+    border: 1px solid #333;
+    padding: 8px;
+    font-size: 11px;
+  }
+}
+
+/* 보고서 스타일 */
+.report-container {
+  background: white;
+  padding: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.report-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid #1E5EBA;
+}
+
+.report-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1E5EBA;
+  margin-bottom: 10px;
+}
+
+.report-subtitle {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.report-date {
+  font-size: 14px;
+  color: #999;
+}
+
+.report-section {
+  margin-bottom: 30px;
+}
+
+.report-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #E0E0E0;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.report-table th {
+  background: #F5F7FA;
+  padding: 12px;
+  text-align: left;
+  font-weight: 700;
+  border: 1px solid #E0E0E0;
+  font-size: 13px;
+}
+
+.report-table td {
+  padding: 12px;
+  border: 1px solid #E0E0E0;
+  font-size: 13px;
+}
+
+.report-table tr:hover {
+  background: #F8F9FA;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.report-summary-card {
+  background: #F8F9FA;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  border-left: 4px solid #2B7DE9;
+}
+
+.report-summary-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.report-summary-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1E5EBA;
+}
+
+.report-footer {
+  margin-top: 50px;
+  padding-top: 20px;
+  border-top: 2px solid #E0E0E0;
+  text-align: right;
+}
+
+.report-signature {
+  display: inline-block;
+  margin-left: 40px;
+}
+
+.report-signature-label {
+  font-size: 14px;
+  color: #666;
+  margin-right: 10px;
+}
+
+.report-signature-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+.report-actions {
+  padding: 20px;
+  background: white;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  gap: 10px;
+}
+
+.report-btn {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.report-btn-print {
+  background: linear-gradient(135deg, #2B7DE9, #64B5F6);
+  color: white;
+}
+
+.report-btn-close {
+  background: #F5F5F5;
+  color: #666;
+}
+
+.report-btn:active {
+  transform: scale(0.98);
+}
+
+
+/* 통계 보고서 섹션 */
+.stats-report-section {
+  background: white;
+  padding: 20px;
+  margin: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.stats-report-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.stats-date-range {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.stats-date-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats-date-item label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
+}
+
+.stats-date-separator {
+  font-size: 16px;
+  color: #666;
+  font-weight: 700;
+  padding-bottom: 14px;
+}
+
+.stats-report-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #2B7DE9, #64B5F6);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(43,125,233,0.3);
+}
+
+.stats-report-btn:active {
+  transform: scale(0.98);
+}
+
+/* 보고서 사진 그리드 */
+.report-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.report-photo-item {
+  border: 1px solid #E0E0E0;
+  border-radius: 10px;
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+
+.report-photo-img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  background: #F5F5F5;
+}
+
+.report-photo-info {
+  padding: 12px;
+  background: #F8F9FA;
+}
+
+.report-photo-label {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.report-photo-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 통합 보고서 구분선 */
+.report-divider {
+  margin: 40px 0;
+  border: 0;
+  border-top: 3px solid #E0E0E0;
+  page-break-after: always;
+}
+
+.report-type-section {
+  margin-bottom: 50px;
+  page-break-inside: avoid;
+}
+
+.report-type-header {
+  background: linear-gradient(135deg, #F5F7FA, #E3F2FD);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2B7DE9;
+}
+
+.report-type-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1E5EBA;
+  margin-bottom: 8px;
+}
+
+.report-type-count {
+  font-size: 14px;
+  color: #666;
+}
+
+</style>
+</head>
+<body>
+
+<!-- 홈 페이지 -->
+<div id="home" class="page active">
+  <div class="header">
+    <div class="logo">
+      고속도로 <span class="logo-red">작</span><span class="logo-yellow">업</span><span class="logo-green">관</span>리
+    </div>
+    <div class="tagline">📍 스마트 현장 관리 시스템 v11.0</div>
+    <div class="header-info">
+      <div class="header-left">
+        <div class="datetime" id="datetime">2025.01.01 (수) 09:00</div>
+        <div class="user-info">
+          <span id="userName">김현장 님</span>
+          <span class="dept-badge" id="userDept">관리팀</span>
+        </div>
+      </div>
+      <div class="settings-icon" onclick="goToSettings()">⚙️</div>
+    </div>
+  </div>
+  
+  <div class="queue-badge" id="queueBadge" onclick="goToQueue()">
+    📦 대기 중인 작업 <span id="queueCount">0</span>건
+  </div>
+  
+  <div class="main-action">
+    <div class="big-card" onclick="goToWork()">
+      <div class="card-header">
+        <div>
+          <div class="card-label">작업 등록</div>
+          <div class="card-title">상세 접수</div>
+        </div>
+        <div class="card-icon">📝</div>
+      </div>
+      <div class="card-desc">작업 위치, 일시, 내용을 상세하게 등록합니다</div>
+    </div>
+  </div>
+  
+  <div class="sub-actions">
+    <div class="sub-card" onclick="goToSimple()">
+      <div class="sub-card-icon">⚡</div>
+      <div class="sub-card-title">간단 접수</div>
+      <div class="sub-card-desc">사진으로 빠르게 등록</div>
+    </div>
+    <div class="sub-card" onclick="goToDailyInspection()">
+      <div class="sub-card-icon">📋</div>
+      <div class="sub-card-title">일일 점검일지</div>
+      <div class="sub-card-desc">체크리스트 점검</div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">빠른 메뉴</div>
+    <div class="feature-grid">
+      <div class="feature-card" onclick="goToList()">
+        <div class="feature-icon">📋</div>
+        <div class="feature-name">작업 목록</div>
+      </div>
+      <div class="feature-card" onclick="goToStats()">
+        <div class="feature-icon">📊</div>
+        <div class="feature-name">통계</div>
+      </div>
+      <div class="feature-card" onclick="goToMission()">
+        <div class="feature-icon">🚨</div>
+        <div class="feature-name">출동/복귀</div>
+      </div>
+      <div class="feature-card" onclick="goToAttendance()">
+        <div class="feature-icon">⏰</div>
+        <div class="feature-name">근태관리</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 상세 접수 페이지 -->
+<div id="work" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="cancelWorkEdit()">←</button>
+    <div class="page-title" id="workPageTitle">📝 상세 작업 접수</div>
+  </div>
+  
+  <div class="edit-mode-indicator" id="editModeIndicator" style="display: none;">
+    ✏️ 수정 모드
+  </div>
+  
+  <div class="form">
+    <div class="form-group">
+      <label class="form-label">작업 상태</label>
+      <select id="workStatus" class="form-select">
+        <option value="pending">작업예정</option>
+        <option value="inprogress">작업중</option>
+        <option value="completed">작업완료</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">작업 구분 <span class="required">*</span></label>
+      <select id="workCategory" class="form-select">
+        <option value="">선택해주세요</option>
+        <option value="시설">시설</option>
+        <option value="교통">교통</option>
+        <option value="도로">도로</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">작업 위치 <span class="required">*</span></label>
+      <input type="text" id="locationInput" class="form-input" placeholder="예: 강남대로 100km">
+    </div>
+    <div class="form-group">
+      <label class="form-label">작업 유형 <span class="required">*</span></label>
+      <select id="workType" class="form-select">
+        <option>선택해주세요</option>
+        <option>도로 보수</option>
+        <option>시설물 점검</option>
+        <option>청소 작업</option>
+        <option>제설 작업</option>
+        <option>긴급 보수</option>
+        <option>기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">작업 일시</label>
+      <div class="datetime-grid">
+        <div class="datetime-item">
+          <label>시작</label>
+          <div class="datetime-input-group">
+            <input type="date" id="startDate" class="form-input">
+            <input type="time" id="startTime" class="form-input">
+          </div>
+        </div>
+        <div class="datetime-item">
+          <label>종료</label>
+          <div class="datetime-input-group">
+            <input type="date" id="endDate" class="form-input">
+            <input type="time" id="endTime" class="form-input">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">투입 자원</label>
+      <input type="text" id="workResources" class="form-input" placeholder="예: 장비 2대, 차량 1대">
+    </div>
+    <div class="form-group">
+      <label class="form-label">투입 인력</label>
+      <input type="text" id="workers" class="form-input" placeholder="예: 5명">
+    </div>
+    <div class="form-group">
+      <label class="form-label">작업 내용 <span class="required">*</span></label>
+      <textarea id="workDetail" class="form-textarea" placeholder="작업 상세 내용을 입력하세요"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">현장 사진 (<span id="num">0</span>/5)</label>
+      <div class="photos" id="pics">
+        <div class="add-photo-btn" onclick="showPhotoModal()">
+          <div class="add-photo-icon">📷</div>
+          <div class="add-photo-text">추가</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">담당자명</label>
+      <input type="text" id="managerName" class="form-input" value="김현장">
+    </div>
+  </div>
+  <div class="submit">
+    <button class="submit-btn" id="workSubmitBtn" onclick="submitWork()">📝 작업 등록</button>
+  </div>
+</div>
+
+<!-- 간단 접수 페이지 -->
+<div id="simple" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">⚡ 간단 접수</div>
+  </div>
+  <div class="form">
+    <div class="form-group">
+      <label class="form-label">작업 구분</label>
+      <select id="simpleCa tegory" class="form-select">
+        <option value="">선택해주세요</option>
+        <option value="시설">시설</option>
+        <option value="교통">교통</option>
+        <option value="도로">도로</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">작업 위치</label>
+      <input type="text" id="simpleLocation" class="form-input" placeholder="예: 강남대로 100km">
+    </div>
+    <div class="form-group">
+      <label class="form-label">현장 사진 (최소 1장 필수)</label>
+      <div class="photos" id="pics-simple">
+        <div class="add-photo-btn" onclick="showPhotoModalSimple()">
+          <div class="add-photo-icon">📷</div>
+          <div class="add-photo-text">추가</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">담당자명</label>
+      <input type="text" id="simpleManagerName" class="form-input" value="김현장">
+    </div>
+  </div>
+  <div class="submit">
+    <button class="submit-btn" onclick="submitSimple()">⚡ 간단 등록</button>
+  </div>
+</div>
+
+<!-- 일일 점검일지 페이지 (신규) -->
+<div id="dailyInspection" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">📋 일일 점검일지</div>
+  </div>
+  
+  <div class="inspection-tabs">
+    <div class="inspection-tab active" onclick="switchInspectionTab(0)">🏗️ 시설점검</div>
+    <div class="inspection-tab" onclick="switchInspectionTab(1)">🚧 현장점검</div>
+    <div class="inspection-tab" onclick="switchInspectionTab(2)">🔧 장비점검</div>
+  </div>
+  
+  <!-- 시설점검 탭 -->
+  <div class="inspection-content active" id="facilityInspection">
+    <div class="checklist-summary">
+      <div class="summary-text">체크: <span class="summary-count" id="facilitySummary">0/10</span> 항목</div>
+    </div>
+    <div class="checklist">
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">휴게소 화장실 청결 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">휴게소 매점 운영 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">주차장 조명 작동 여부</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">CCTV 카메라 작동 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">비상벨 작동 점검</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">소화기 위치 및 유효기간</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">비상구 안내표지판 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">방송시설 작동 여부</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">전광판 표시 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'facility')">
+        <input type="checkbox">
+        <div class="checklist-label">보안시설 이상 유무</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 현장점검 탭 -->
+  <div class="inspection-content" id="siteInspection">
+    <div class="checklist-summary">
+      <div class="summary-text">체크: <span class="summary-count" id="siteSummary">0/12</span> 항목</div>
+    </div>
+    <div class="checklist">
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">도로 표면 균열 및 파손</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">중앙분리대 손상 여부</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">방음벽 파손 및 기울어짐</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">가드레일 변형 및 파손</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">노면표시 상태 (차선, 화살표)</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">표지판 시야 확보 및 손상</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">갓길 청결 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">배수로 및 맨홀 막힘</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">낙하물 및 쓰레기</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">터널 내 조명 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">교량 이음매 및 신축이음부</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'site')">
+        <input type="checkbox">
+        <div class="checklist-label">비탈면 식생 및 낙석 방지망</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 장비점검 탭 -->
+  <div class="inspection-content" id="equipmentInspection">
+    <div class="checklist-summary">
+      <div class="summary-text">체크: <span class="summary-count" id="equipmentSummary">0/8</span> 항목</div>
+    </div>
+    <div class="checklist">
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">작업차량 시동 및 운행 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">타이어 공기압 및 마모도</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">브레이크 작동 상태</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">엔진오일 및 냉각수 점검</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">경광등 및 안전등 작동</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">무전기 및 통신장비 테스트</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">안전장구 (안전모, 조끼) 구비</div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this, 'equipment')">
+        <input type="checkbox">
+        <div class="checklist-label">공구 및 응급장비 휴대 여부</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="form" style="padding-top: 0;">
+    <div class="form-group">
+      <label class="form-label">특이사항</label>
+      <textarea id="dailyInspectionNote" class="form-textarea" placeholder="특이사항이 있으면 입력하세요"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">점검자</label>
+      <input type="text" id="dailyInspectionManager" class="form-input" value="김현장">
+    </div>
+  </div>
+  <div class="submit">
+    <button class="submit-btn" onclick="submitDailyInspection()">✅ 점검 완료</button>
+  </div>
+</div>
+
+<!-- 기본 점검 페이지 (기존) -->
+<div id="inspection" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">✅ 기본 점검</div>
+  </div>
+  <div class="form">
+    <div class="form-group">
+      <label class="form-label">점검 도로 <span class="required">*</span></label>
+      <select id="inspectionRoad" class="form-select">
+        <option>선택해주세요</option>
+        <option>강남대로</option>
+        <option>테헤란로</option>
+        <option>올림픽대로</option>
+        <option>강변북로</option>
+        <option>내부순환로</option>
+      </select>
+    </div>
+  </div>
+  <div class="checklist">
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">도로 표면 상태 확인</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">중앙분리대 점검</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">방음벽 상태 확인</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">표지판 및 안내판 점검</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">조명 시설 점검</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">배수로 및 맨홀 점검</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">갓길 상태 확인</div>
+    </div>
+    <div class="checklist-item" onclick="toggleCheck(this)">
+      <input type="checkbox">
+      <div class="checklist-label">CCTV 작동 상태</div>
+    </div>
+  </div>
+  <div class="form" style="padding-top: 0;">
+    <div class="form-group">
+      <label class="form-label">특이사항</label>
+      <textarea id="inspectionNote" class="form-textarea" placeholder="특이사항이 있으면 입력하세요"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">점검자</label>
+      <input type="text" id="inspectionManager" class="form-input" value="김현장">
+    </div>
+  </div>
+  <div class="submit">
+    <button class="submit-btn" onclick="submitInspection()">✅ 점검 완료</button>
+  </div>
+</div>
+
+<!-- 출동/복귀 페이지 -->
+<div id="mission" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">🚨 출동/복귀 관리</div>
+  </div>
+  
+  <div class="mission-status-card">
+    <div class="dispatch-status-text">🚨 출동 시간</div>
+    <div class="dispatch-timer" id="missionTimer">00:00:00</div>
+    <div class="dispatch-info" id="missionInfo">
+      <div class="dispatch-info-item">
+        <div class="dispatch-info-label">출동 시각</div>
+        <div class="dispatch-info-value" id="missionStartTime">--:--</div>
+      </div>
+      <div class="dispatch-info-item">
+        <div class="dispatch-info-label">출동 시간</div>
+        <div class="dispatch-info-value" id="missionDuration">0시간</div>
+      </div>
+    </div>
+    <button class="dispatch-btn start" id="missionBtn" onclick="toggleMission()">
+      🚨 출동하기
+    </button>
+  </div>
+  
+  <div class="dispatch-history" id="missionHistory"></div>
+</div>
+
+<!-- 근태관리 페이지 -->
+<div id="attendance" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">⏰ 근태 관리</div>
+  </div>
+  
+  <!-- 본인 근태 카드 -->
+  <div class="attendance-card" id="myAttendanceCard">
+    <div class="attendance-user" id="attendanceUserName">김현장</div>
+    <div class="attendance-status-grid">
+      <div class="attendance-status-item">
+        <div class="attendance-status-label">출근 시각</div>
+        <div class="attendance-status-value" id="myCheckInTime">미등록</div>
+      </div>
+      <div class="attendance-status-item">
+        <div class="attendance-status-label">퇴근 시각</div>
+        <div class="attendance-status-value" id="myCheckOutTime">미등록</div>
+      </div>
+    </div>
+    <div style="text-align: center;" id="myAlcoholStatus"></div>
+  </div>
+  
+  <div class="action-buttons">
+    <button class="action-btn action-btn-primary" onclick="showCheckInModal()">🏢 출근하기</button>
+    <button class="action-btn action-btn-secondary" onclick="showCheckOutModal()">🏠 퇴근하기</button>
+  </div>
+  
+  <!-- 관리자 전용 근태 목록 -->
+  <div id="adminAttendanceSection" style="display: none;">
+    <div class="section" style="padding-top: 0;">
+      <div class="section-title">전체 근태 현황 (관리자)</div>
+    </div>
+    <div class="attendance-list" id="allAttendanceList"></div>
+  </div>
+</div>
+
+<!-- 작업 목록 페이지 -->
+<div id="list" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">📋 작업 목록</div>
+  </div>
+  
+  <div class="filter-tabs">
+    <div class="filter-tab active" onclick="filterWorks('all')">전체</div>
+    <div class="filter-tab" onclick="filterWorks('my')">내 작업</div>
+    <div class="filter-tab" onclick="filterWorks('mission')">출동</div>
+    <div class="filter-tab" onclick="filterWorks('dailyInspection')">일일점검</div>
+    <div class="filter-tab" onclick="filterWorks('inspection')">점검</div>
+    <div class="filter-tab" onclick="filterWorks('work')">작업</div>
+  </div>
+  
+  <div class="date-filter">
+    <div class="date-filter-title">📅 기간 조회</div>
+    <div class="date-filter-inputs">
+      <input type="date" id="filterStartDate" onchange="applyDateFilter()">
+      <div class="date-filter-separator">~</div>
+      <input type="date" id="filterEndDate" onchange="applyDateFilter()">
+    </div>
+  </div>
+  
+  <div class="list-header">
+    <div class="list-count" id="periodText">전체 작업 <span id="workCount">0</span>건</div>
+  </div>
+  
+  <div class="work-list" id="workListContainer"></div>
+</div>
+
+<!-- 통계 페이지 (개선) -->
+<div id="stats" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">📊 통계</div>
+  </div>
+  
+  <!-- 기간 필터 탭 -->
+  <div class="stats-filter-tabs">
+    <div class="stats-filter-tab active" onclick="filterStatsPeriod('daily')">일간</div>
+    <div class="stats-filter-tab" onclick="filterStatsPeriod('weekly')">주간</div>
+    <div class="stats-filter-tab" onclick="filterStatsPeriod('monthly')">월간</div>
+  </div>
+  
+  <!-- 보고서 기간 선택 -->
+  <div class="stats-report-section">
+    <div class="stats-report-title">📄 통합 보고서 생성</div>
+    <div class="stats-date-range">
+      <div class="stats-date-item">
+        <label>시작일</label>
+        <input type="date" id="reportStartDate" class="form-input">
+      </div>
+      <div class="stats-date-separator">~</div>
+      <div class="stats-date-item">
+        <label>종료일</label>
+        <input type="date" id="reportEndDate" class="form-input">
+      </div>
+    </div>
+    <button class="stats-report-btn" onclick="generateIntegratedReport()">
+      📊 통합 보고서 생성
+    </button>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">📊 전체 통계</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-value" id="statTotalWorks">0</div>
+        <div class="stat-label">총 작업 건수</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="statInspections">0</div>
+        <div class="stat-label">기본 점검</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-value" id="statSimple">0</div>
+        <div class="stat-label">간단 접수</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🚨</div>
+        <div class="stat-value" id="statMissions">0</div>
+        <div class="stat-label">출동 기록</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 부서별 통계 차트 -->
+  <div class="section">
+    <div class="chart-container">
+      <div class="chart-title">👥 부서별 작업 현황</div>
+      <div class="chart-wrapper">
+        <canvas id="deptChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 유형별 통계 차트 -->
+  <div class="section">
+    <div class="chart-container">
+      <div class="chart-title">📋 유형별 작업 분포</div>
+      <div class="chart-wrapper">
+        <canvas id="typeChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 처리현황 차트 -->
+  <div class="section">
+    <div class="chart-container">
+      <div class="chart-title">⏱️ 처리 현황 (접수/완료)</div>
+      <div class="chart-wrapper">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">📈 유형별 통계</div>
+    <div class="category-stats-grid">
+      <!-- 시설 통계 -->
+      <div class="category-stat-card facility">
+        <div class="category-header">
+          <div class="category-name">🏗️ 시설</div>
+          <div class="category-icon">🏗️</div>
+        </div>
+        <div class="category-stats-row">
+          <div class="category-stat-item">
+            <div class="category-stat-value" id="statFacilityTotal">0</div>
+            <div class="category-stat-label">전체</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-value status-complete" id="statFacilityComplete">0</div>
+            <div class="category-stat-label">완료</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-value status-progress" id="statFacilityProgress">0</div>
+            <div class="category-stat-label">진행중</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 교통 통계 -->
+      <div class="category-stat-card traffic">
+        <div class="category-header">
+          <div class="category-name">🚦 교통</div>
+          <div class="category-icon">🚦</div>
+        </div>
+        <div class="category-stats-row">
+          <div class="category-stat-item">
+            <div class="category-stat-value" id="statTrafficTotal">0</div>
+            <div class="category-stat-label">전체</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-value status-complete" id="statTrafficComplete">0</div>
+            <div class="category-stat-label">완료</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-value status-progress" id="statTrafficProgress">0</div>
+            <div class="category-stat-label">진행중</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 도로 통계 -->
+      <div class="category-stat-card road">
+        <div class="category-header">
+          <div class="category-name">🛣️ 도로</div>
+          <div class="category-icon">🛣️</div>
+        </div>
+        <div class="category-stats-row">
+          <div class="category-stat-item">
+            <div class="category-stat-value" id="statRoadTotal">0</div>
+            <div class="category-stat-label">전체</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-value status-complete" id="statRoadComplete">0</div>
+            <div class="category-stat-label">완료</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-value status-progress" id="statRoadProgress">0</div>
+            <div class="category-stat-label">진행중</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 대기열 페이지 --><!-- 대기열 페이지 -->
+<div id="queue" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">📦 대기열 (<span id="queueListCount">0</span>)</div>
+  </div>
+  
+  <div class="queue-list" id="queueListContainer"></div>
+</div>
+
+<!-- 설정 페이지 -->
+<div id="settings" class="page">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="page-title">⚙️ 설정</div>
+  </div>
+  
+  <div class="section">
+    <div class="settings-item">
+      <div class="settings-item-title">기본 정보</div>
+      <div class="form-group">
+        <label class="form-label">담당자명</label>
+        <input type="text" id="defaultManagerName" class="form-input" value="김현장">
+      </div>
+      <div class="form-group">
+        <label class="form-label">소속 부서</label>
+        <select id="defaultDept" class="form-select">
+          <option>관리팀</option>
+          <option>시설팀</option>
+          <option>안전팀</option>
+          <option>운영팀</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="settings-item">
+      <div class="settings-item-title">업로드 모드</div>
+      <div class="radio-group">
+        <div class="radio-option selected" onclick="selectUploadMode('instant')">
+          <input type="radio" name="uploadMode" value="instant" checked>
+          <div class="radio-label">
+            <div class="radio-title">즉시 업로드</div>
+            <div class="radio-desc">작업 등록 시 바로 업로드</div>
+          </div>
+        </div>
+        <div class="radio-option" onclick="selectUploadMode('wifi')">
+          <input type="radio" name="uploadMode" value="wifi">
+          <div class="radio-label">
+            <div class="radio-title">WiFi 연결 시 업로드</div>
+            <div class="radio-desc">대기열에 저장 후 WiFi에서 일괄 업로드</div>
+          </div>
+        </div>
+      </div>
+      <div class="warning-box" id="wifiWarning">
+        <div class="warning-text">⚠️ WiFi 모드: 작업이 대기열에 저장되며, WiFi 연결 시 수동으로 업로드해야 합니다.</div>
+      </div>
+    </div>
+    
+    <div class="settings-item">
+      <div class="settings-item-title">관리자 모드</div>
+      <div class="radio-group">
+        <div class="radio-option" onclick="toggleAdminMode(false)">
+          <input type="radio" name="adminMode" value="user" checked>
+          <div class="radio-label">
+            <div class="radio-title">일반 사용자</div>
+            <div class="radio-desc">기본 기능만 사용</div>
+          </div>
+        </div>
+        <div class="radio-option" onclick="toggleAdminMode(true)">
+          <input type="radio" name="adminMode" value="admin">
+          <div class="radio-label">
+            <div class="radio-title">관리자</div>
+            <div class="radio-desc">작업 수정, 삭제 및 전체 근태 조회 권한</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="submit">
+    <button class="submit-btn" onclick="saveSettings()">💾 설정 저장</button>
+  </div>
+</div>
+
+<!-- 사진 모달 -->
+<div id="photoModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-title">📷 사진 추가</div>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-primary" onclick="takePhoto()">📸 사진 촬영</button>
+      <button class="modal-btn modal-btn-primary" onclick="selectPhoto()">🖼️ 갤러리에서 선택</button>
+      <button class="modal-btn modal-btn-secondary" onclick="closePhotoModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 전역 상태 관리
+const state = {
+  workItems: [],
+  queueItems: [],
+  missionRecords: [],
+  myAttendance: null,
+  allAttendance: [],
+  currentUser: '김현장',
+  userDept: '관리팀',
+  uploadMode: 'instant',
+  isAdmin: false,
+  currentMission: null,
+  missionTimer: null,
+  selectedWorkIndex: null,
+  currentFilter: 'all',
+  dateFilter: { start: null, end: null },
+  isEditMode: false,
+  editingWorkIndex: null,
+  missionFilterActive: false,
+  missionFilterStart: null,
+  missionFilterEnd: null,
+  currentInspectionTab: 0,
+  inspectionChecked: { facility: 0, site: 0, equipment: 0 }
+};
+
+let photoCount = 0;
+let photoCountSimple = 0;
+let currentMode = 'work';
+let uploadMode = 'instant';
+let userDept = '관리팀';
+
+// 초기화
+function init() {
+  updateDateTime();
+  setInterval(updateDateTime, 60000);
+  updatePeriodText();
+  loadDummyData();
+  updateWorkList();
+  updateMissionHistory();
+  updateMyAttendance();
+  updateQueueBadge();
+  
+  const deptSelect = document.getElementById('defaultDept');
+  if (deptSelect) {
+    deptSelect.value = userDept;
+  }
+}
+
+// 더미 데이터 로드 (유형 추가)
+// 확장된 더미 데이터 (30건)
+function loadDummyData() {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  
+  // 날짜 생성 함수
+  const getDateDaysAgo = (days) => {
+    const d = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return d.toISOString().split('T')[0];
+  };
+  
+  const departments = ['도로', '교통', '시설'];
+  const depts = ['시설팀', '안전팀', '관리팀', '운영팀'];
+  const workTypes = ['도로 보수', '시설물 점검', '청소 작업', '제설 작업', '긴급 보수', '정기점검'];
+  const locations = ['강남대로', '올림픽대로', '테헤란로', '강변북로', '내부순환로', '외곽순환로', '휴게소 A', '휴게소 B', '휴게소 C'];
+  const managers = ['박팀장', '이과장', '최대리', '김현장', '정사원', '강대리', '윤과장'];
+  const statuses = ['completed', 'inprogress', 'pending'];
+  
+  state.workItems = [];
+  
+  // 30건의 다양한 데이터 생성
+  for (let i = 0; i < 30; i++) {
+    const daysAgo = Math.floor(i / 3); // 0-10일 전
+    const date = getDateDaysAgo(daysAgo);
+    const category = departments[i % 3];
+    const dept = depts[i % 4];
+    const manager = managers[i % 7];
+    const hour = 8 + (i % 10);
+    const startTime = `${String(hour).padStart(2, '0')}:${String((i % 6) * 10).padStart(2, '0')}`;
+    const endTime = `${String(hour + 2).padStart(2, '0')}:${String((i % 6) * 10).padStart(2, '0')}`;
+    
+    if (i % 3 === 0) {
+      // 상세접수
+      // 상세접수
+      const photoCount1 = (i % 3) + 1;
+      const photos1 = [];
+      for (let j = 0; j < photoCount1; j++) {
+        photos1.push(createPhotoWithWatermark(
+          locations[i % 9] + ' ' + (100 + i * 5) + 'km',
+          date + ' ' + startTime,
+          dept
+        ));
+      }
+      state.workItems.push({
+        type: '상세접수',
+        category: category,
+        status: statuses[i % 3],
+        location: locations[i % 9] + ' ' + (100 + i * 5) + 'km',
+        workType: workTypes[i % 6],
+        startDate: date,
+        startTime: startTime,
+        endDate: date,
+        endTime: endTime,
+        resources: `장비 ${(i % 3) + 1}대`,
+        workers: `${(i % 5) + 2}명`,
+        detail: `${workTypes[i % 6]} 작업 - 상세내용 ${i + 1}`,
+        manager: manager,
+        dept: dept,
+        photoCount: photoCount1,
+        photos: photos1,
+        memo: '',
+        timestamp: new Date(date + ' ' + startTime).toISOString()
+      });
+    } else if (i % 3 === 1) {
+      // 기본점검
+      state.workItems.push({
+        type: '기본점검',
+        category: category,
+        road: locations[i % 9],
+        checked: 5 + (i % 4),
+        manager: manager,
+        dept: dept,
+        time: startTime,
+        startDate: date,
+        photos: [],
+        memo: '',
+        note: i % 2 === 0 ? '정상' : '보수 필요',
+        timestamp: new Date(date + ' ' + startTime).toISOString()
+      });
+    } else {
+      // 간단접수
+      // 간단접수
+      const photoCount2 = (i % 2) + 1;
+      const photos2 = [];
+      for (let j = 0; j < photoCount2; j++) {
+        photos2.push(createPhotoWithWatermark(
+          locations[i % 9] + ' ' + (50 + i * 3) + 'km',
+          date + ' ' + startTime,
+          dept
+        ));
+      }
+      state.workItems.push({
+        type: '간단접수',
+        category: category,
+        location: locations[i % 9] + ' ' + (50 + i * 3) + 'km',
+        manager: manager,
+        dept: dept,
+        photoCount: photoCount2,
+        photos: photos2,
+        time: startTime,
+        startDate: date,
+        memo: '',
+        timestamp: new Date(date + ' ' + startTime).toISOString()
+      });
+    }
+  }
+  
+  // 기존 출동 기록
+  const yesterday = getDateDaysAgo(1);
+  const missionStart = new Date(yesterday + ' 15:30').toISOString();
+  const missionEnd = new Date(yesterday + ' 17:45').toISOString();
+  
+  state.missionRecords = [
+    {
+      date: yesterday,
+      startTime: '15:30',
+      endTime: '17:45',
+      duration: '2시간 15분',
+      workCount: 0,
+      timestamp: missionStart,
+      endTimestamp: missionEnd
+    }
+  ];
+  
+  calculateMissionWorkCounts();
+  
+  // 더미 근태 데이터
+  state.allAttendance = [
+    {
+      employee: '박팀장',
+      date: today,
+      startTime: '08:00',
+      endTime: null,
+      alcoholTest: 'confirmed',
+      leaveType: null,
+      status: 'working',
+      timestamp: new Date(today + ' 08:00').toISOString()
+    },
+    {
+      employee: '이과장',
+      date: today,
+      startTime: '08:30',
+      endTime: null,
+      alcoholTest: 'confirmed',
+      leaveType: null,
+      status: 'working',
+      timestamp: new Date(today + ' 08:30').toISOString()
+    },
+    {
+      employee: '최대리',
+      date: yesterday,
+      startTime: '09:00',
+      endTime: '18:00',
+      alcoholTest: 'confirmed',
+      leaveType: null,
+      status: 'off',
+      duration: '9시간',
+      timestamp: new Date(yesterday + ' 09:00').toISOString()
+    }
+  ];
+}
+
+
+// 출동 시간 동안의 작업 건수 계산
+function calculateMissionWorkCounts() {
+  state.missionRecords.forEach(mission => {
+    const start = new Date(mission.timestamp).getTime();
+    const end = new Date(mission.endTimestamp).getTime();
+    
+    mission.workCount = state.workItems.filter(item => {
+      const itemTime = new Date(item.timestamp).getTime();
+      return itemTime >= start && itemTime <= end;
+    }).length;
+  });
+}
+
+// 날짜/시간 업데이트
+function updateDateTime() {
+  const now = new Date();
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${days[now.getDay()]}) ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const dateEl = document.getElementById('datetime');
+  if (dateEl) dateEl.textContent = dateStr;
+}
+
+// 워터마크가 있는 사진 생성
+function createPhotoWithWatermark(location, datetime, dept) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  const ctx = canvas.getContext('2d');
+  
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, '#E3F2FD');
+  gradient.addColorStop(1, '#BBDEFB');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.strokeStyle = 'rgba(100, 150, 200, 0.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < canvas.width; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, canvas.height);
+    ctx.stroke();
+  }
+  for (let i = 0; i < canvas.height; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(canvas.width, i);
+    ctx.stroke();
+  }
+  
+  ctx.font = 'bold 120px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(100, 150, 200, 0.2)';
+  ctx.fillText('📷', canvas.width / 2, canvas.height / 2 - 40);
+  
+  ctx.font = 'bold 32px Arial';
+  ctx.fillStyle = 'rgba(60, 120, 180, 0.8)';
+  ctx.fillText('SAMPLE PHOTO', canvas.width / 2, canvas.height / 2 + 60);
+  
+  ctx.fillStyle = 'rgba(30, 94, 186, 0.95)';
+  ctx.fillRect(0, canvas.height - 140, canvas.width, 140);
+  
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 28px Arial';
+  ctx.fillText(`📍 ${location}`, 30, canvas.height - 95);
+  
+  ctx.font = '24px Arial';
+  ctx.fillText(`🕐 ${datetime}`, 30, canvas.height - 55);
+  ctx.fillText(`👤 ${dept}`, 30, canvas.height - 20);
+  
+  return canvas.toDataURL('image/jpeg', 0.9);
+}
+
+// 대기열 배지 업데이트
+function updateQueueBadge() {
+  const badge = document.getElementById('queueBadge');
+  const count = document.getElementById('queueCount');
+  if (!badge || !count) return;
+  
+  const queueCount = state.queueItems.length;
+  count.textContent = queueCount;
+  
+  if (uploadMode === 'wifi' && queueCount > 0) {
+    badge.classList.add('show');
+    badge.className = queueCount >= 5 ? 'queue-badge show warning' : 'queue-badge show normal';
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+// 대기열 목록 업데이트
+function updateQueueList() {
+  const container = document.getElementById('queueListContainer');
+  const countEl = document.getElementById('queueListCount');
+  if (!container) return;
+  
+  if (countEl) countEl.textContent = state.queueItems.length;
+  
+  if (state.queueItems.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-text">대기 중인 작업이 없습니다</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = state.queueItems.map((item, index) => {
+    const typeText = item.type === '기본점검' ? '✅ 기본점검' : item.type === '간단접수' ? '⚡ 간단접수' : '📝 상세접수';
+    return `
+      <div class="queue-item">
+        <div class="queue-item-header">
+          <div class="queue-badge-small">${typeText}</div>
+          <div class="queue-time">${item.time || '--:--'}</div>
+        </div>
+        <div class="queue-info">
+          <div class="queue-location">${item.location || item.road || '위치 미입력'}</div>
+          ${item.detail ? `<div class="queue-detail">${item.detail}</div>` : ''}
+          ${item.checked ? `<div class="queue-detail">체크: ${item.checked}/8 항목</div>` : ''}
+        </div>
+        <div class="queue-actions">
+          <button class="queue-action-btn queue-upload-btn" onclick="uploadQueueItem(${index})">📤 업로드</button>
+          <button class="queue-action-btn queue-delete-btn" onclick="deleteQueueItem(${index})">🗑️ 삭제</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 대기열 아이템 업로드
+function uploadQueueItem(index) {
+  if (index < 0 || index >= state.queueItems.length) return;
+  
+  const item = state.queueItems.splice(index, 1)[0];
+  state.workItems.push(item);
+  
+  updateQueueList();
+  updateQueueBadge();
+  updateWorkList();
+  
+  alert('✓ 작업이 업로드되었습니다!');
+}
+
+// 대기열 아이템 삭제
+function deleteQueueItem(index) {
+  if (!confirm('이 작업을 삭제하시겠습니까?')) return;
+  
+  state.queueItems.splice(index, 1);
+  updateQueueList();
+  updateQueueBadge();
+  
+  alert('✓ 작업이 삭제되었습니다.');
+}
+
+// 기간 텍스트 업데이트
+function updatePeriodText() {
+  const el = document.getElementById('periodText');
+  const countEl = document.getElementById('workCount');
+  if (!el) return;
+  
+  const filter = state.currentFilter;
+  let filterText = {
+    'all': '전체 작업',
+    'my': '내 작업',
+    'mission': '출동 기록',
+    'dailyInspection': '일일점검',
+    'inspection': '기본점검',
+    'work': '작업 접수'
+  }[filter] || '전체 작업';
+  
+  if (state.missionFilterActive) {
+    filterText = '출동 시간대 작업';
+  }
+  
+  el.innerHTML = `${filterText} <span id="workCount">0</span>건`;
+}
+
+// 날짜 필터 적용
+function applyDateFilter() {
+  const startDate = document.getElementById('filterStartDate').value;
+  const endDate = document.getElementById('filterEndDate').value;
+  
+  state.dateFilter = {
+    start: startDate || null,
+    end: endDate || null
+  };
+  
+  updateWorkList();
+}
+
+// 작업 목록 필터링
+function filterWorks(filter) {
+  state.currentFilter = filter;
+  state.missionFilterActive = false;
+  
+  const tabs = document.querySelectorAll('.filter-tab');
+  tabs.forEach((tab, i) => {
+    tab.classList.remove('active');
+    if ((filter === 'all' && i === 0) ||
+        (filter === 'my' && i === 1) ||
+        (filter === 'mission' && i === 2) ||
+        (filter === 'inspection' && i === 3) ||
+        (filter === 'work' && i === 4)) {
+      tab.classList.add('active');
+    }
+  });
+  
+  updatePeriodText();
+  updateWorkList();
+}
+
+// 출동 시간대 작업 필터링
+function filterWorksByMission(startTimestamp, endTimestamp) {
+  state.missionFilterActive = true;
+  state.missionFilterStart = startTimestamp;
+  state.missionFilterEnd = endTimestamp;
+  state.currentFilter = 'mission-time';
+  
+  const tabs = document.querySelectorAll('.filter-tab');
+  tabs.forEach(tab => tab.classList.remove('active'));
+  
+  updatePeriodText();
+  updateWorkList();
+  
+  setActivePage('list');
+  window.scrollTo(0, 0);
+}
+
+// 작업 목록 업데이트
+function updateWorkList() {
+  const container = document.getElementById('workListContainer');
+  if (!container) return;
+  
+  let items = [...state.workItems];
+  
+  if (state.missionFilterActive && state.missionFilterStart && state.missionFilterEnd) {
+    const start = new Date(state.missionFilterStart).getTime();
+    const end = new Date(state.missionFilterEnd).getTime();
+    
+    items = items.filter(item => {
+      const itemTime = new Date(item.timestamp).getTime();
+      return itemTime >= start && itemTime <= end;
+    });
+  } else {
+    if (state.currentFilter === 'my') {
+      items = items.filter(item => item.manager === state.currentUser);
+    } else if (state.currentFilter === 'mission') {
+      items = state.missionRecords.map(d => ({
+        type: 'mission',
+        date: d.date,
+        startTime: d.startTime,
+        endTime: d.endTime,
+        duration: d.duration,
+        workCount: d.workCount || 0,
+        timestamp: d.timestamp,
+        endTimestamp: d.endTimestamp
+      }));
+    } else if (state.currentFilter === 'dailyInspection') {
+      items = items.filter(item => item.type === '일일점검');
+    } else if (state.currentFilter === 'inspection') {
+      items = items.filter(item => item.type === '기본점검');
+    } else if (state.currentFilter === 'work') {
+      items = items.filter(item => item.type === '상세접수' || item.type === '간단접수');
+    }
+    
+    if (state.currentFilter === 'all' || state.currentFilter === 'my') {
+      const missionItems = state.missionRecords.map(d => ({
+        type: 'mission',
+        date: d.date,
+        startTime: d.startTime,
+        endTime: d.endTime,
+        duration: d.duration,
+        workCount: d.workCount || 0,
+        timestamp: d.timestamp,
+        endTimestamp: d.endTimestamp
+      }));
+      items = [...items, ...missionItems];
+    }
+  }
+  
+  if (state.dateFilter.start || state.dateFilter.end) {
+    items = items.filter(item => {
+      const itemDate = item.startDate || item.date;
+      if (!itemDate) return false;
+      
+      if (state.dateFilter.start && itemDate < state.dateFilter.start) return false;
+      if (state.dateFilter.end && itemDate > state.dateFilter.end) return false;
+      
+      return true;
+    });
+  }
+  
+  items.sort((a, b) => {
+    const timeA = new Date(a.timestamp || a.startDate).getTime();
+    const timeB = new Date(b.timestamp || b.startDate).getTime();
+    return timeB - timeA;
+  });
+  
+  const countEl = document.getElementById('workCount');
+  if (countEl) countEl.textContent = items.length;
+  
+  if (items.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">등록된 작업이 없습니다</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = items.map((item, index) => {
+    if (item.type === 'mission') {
+      return `
+        <div class="work-item mission" onclick="filterWorksByMission('${item.timestamp}', '${item.endTimestamp}')">
+          <div class="work-item-header">
+            <div class="work-badge mission">🚨 출동</div>
+            <div class="work-time">${item.date}</div>
+          </div>
+          <div class="work-info">
+            <div class="work-location">${item.duration}</div>
+            <div class="history-times">
+              <div class="history-time-item">🚨 ${item.startTime}</div>
+              <div class="history-time-item">🏠 ${item.endTime || '진행중'}</div>
+            </div>
+            ${item.workCount > 0 ? `<div class="history-work-count">📝 작업 ${item.workCount}건 완료 (클릭하여 보기)</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    const originalIndex = state.workItems.indexOf(item);
+    
+    let photoPreview = '';
+    if (item.photos && item.photos.length > 0) {
+      const displayPhotos = item.photos.slice(0, 3);
+      photoPreview = `
+        <div class="work-photos-preview">
+          ${displayPhotos.map(photo => `
+            <div class="work-photo-thumb">
+              <img src="${photo}" alt="사진">
+            </div>
+          `).join('')}
+          ${item.photos.length > 3 ? `<div style="font-size: 12px; color: #999; padding: 4px;">+${item.photos.length - 3}장 더보기</div>` : ''}
+        </div>
+      `;
+    }
+    
+    if (item.type === '일일점검') {
+      const inspectionIcon = item.inspectionType === '시설점검' ? '🏗️' : item.inspectionType === '현장점검' ? '🚧' : '🔧';
+      return `
+        <div class="work-item daily-inspection" onclick="showDailyInspectionReport(${originalIndex})">
+          <div class="work-item-header">
+            <div class="work-badge daily-inspection">📋 ${item.inspectionType}</div>
+            <div class="work-time">${item.time || '--:--'}</div>
+          </div>
+          <div class="work-info">
+            <div class="work-location">${inspectionIcon} 일일점검일지</div>
+            <div class="work-detail">체크 완료: ${item.checked} 항목</div>
+            ${item.note ? `<div class="work-detail">${item.note}</div>` : ''}
+            <div class="work-meta">
+              <span>👤 ${item.manager}</span>
+              <span>📅 ${item.startDate}</span>
+              <span style="color: #9C27B0; font-weight: 700;">📄 보고서 출력</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    if (item.type === '기본점검') {
+      return `
+        <div class="work-item inspection" onclick="editWorkFromList(${originalIndex})">
+          <div class="work-item-header">
+            <div class="work-badge inspection">✅ 기본점검</div>
+            <div class="work-time">${item.time || '--:--'}</div>
+          </div>
+          <div class="work-info">
+            <div class="work-location">${item.road}</div>
+            <div class="work-detail">체크: ${item.checked}/8 항목</div>
+            ${item.note ? `<div class="work-detail">${item.note}</div>` : ''}
+            <div class="work-meta">
+              <span>👤 ${item.manager}</span>
+              <span>📅 ${item.startDate}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    if (item.type === '간단접수') {
+      const categoryIcon = item.category === '시설' ? '🏗️' : item.category === '교통' ? '🚦' : item.category === '도로' ? '🛣️' : '';
+      return `
+        <div class="work-item work" onclick="editWorkFromList(${originalIndex})">
+          <div class="work-item-header">
+            <div class="work-badge work">⚡ 간단접수</div>
+            <div class="work-time">${item.time || '--:--'}</div>
+          </div>
+          <div class="work-info">
+            <div class="work-location">${categoryIcon} ${item.location}</div>
+            <div class="work-detail">📷 사진 ${item.photoCount}장</div>
+            ${photoPreview}
+            <div class="work-meta">
+              <span>👤 ${item.manager}</span>
+              <span>📅 ${item.startDate}</span>
+              <span style="color: #2196F3; font-weight: 700; cursor: pointer;" onclick="event.stopPropagation(); showWorkReport(${originalIndex})">📄 보고서 출력</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    if (item.type === '상세접수') {
+      const statusText = item.status === 'completed' ? '완료' : item.status === 'inprogress' ? '진행중' : '예정';
+      const categoryIcon = item.category === '시설' ? '🏗️' : item.category === '교통' ? '🚦' : item.category === '도로' ? '🛣️' : '';
+      return `
+        <div class="work-item work" onclick="editWorkFromList(${originalIndex})">
+          <div class="work-item-header">
+            <div class="work-badge work">📝 상세접수</div>
+            <div class="work-time">${statusText}</div>
+          </div>
+          <div class="work-info">
+            <div class="work-location">${categoryIcon} ${item.location}</div>
+            <div class="work-detail">${item.workType}</div>
+            ${item.detail ? `<div class="work-detail">${item.detail}</div>` : ''}
+            ${photoPreview}
+            <div class="work-meta">
+              <span>👤 ${item.manager}</span>
+              ${item.startDate ? `<span>📅 ${item.startDate}</span>` : ''}
+              <span style="color: #2196F3; font-weight: 700; cursor: pointer;" onclick="event.stopPropagation(); showWorkReport(${originalIndex})">📄 보고서 출력</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    return '';
+  }).join('');
+  
+  updateStats();
+}
+
+// 작업 목록에서 수정 모드로 진입
+function editWorkFromList(index) {
+  if (index < 0 || index >= state.workItems.length) return;
+  
+  const item = state.workItems[index];
+  const canEdit = state.isAdmin || item.manager === state.currentUser;
+  
+  if (item.type === '상세접수') {
+    state.isEditMode = true;
+    state.editingWorkIndex = index;
+    
+    document.getElementById('workStatus').value = item.status || 'pending';
+    document.getElementById('workCategory').value = item.category || '';
+    document.getElementById('locationInput').value = item.location || '';
+    document.getElementById('workType').value = item.workType || '선택해주세요';
+    document.getElementById('startDate').value = item.startDate || '';
+    document.getElementById('startTime').value = item.startTime || '';
+    document.getElementById('endDate').value = item.endDate || '';
+    document.getElementById('endTime').value = item.endTime || '';
+    document.getElementById('workResources').value = item.resources || '';
+    document.getElementById('workers').value = item.workers || '';
+    document.getElementById('workDetail').value = item.detail || '';
+    document.getElementById('managerName').value = item.manager || '';
+    
+    photoCount = item.photoCount || 0;
+    document.getElementById('num').textContent = photoCount;
+    
+    const picsContainer = document.getElementById('pics');
+    picsContainer.innerHTML = '';
+    
+    if (item.photos && item.photos.length > 0) {
+      item.photos.forEach(photo => {
+        const photoDiv = document.createElement('div');
+        photoDiv.className = 'photo';
+        photoDiv.innerHTML = `<img src="${photo}">`;
+        if (canEdit) {
+          photoDiv.innerHTML += `<button class="photo-remove" onclick="delPhoto(this)">×</button>`;
+        }
+        picsContainer.appendChild(photoDiv);
+      });
+    }
+    
+    if (canEdit && photoCount < 5) {
+      const addBtn = document.createElement('div');
+      addBtn.className = 'add-photo-btn';
+      addBtn.onclick = showPhotoModal;
+      addBtn.innerHTML = '<div class="add-photo-icon">📷</div><div class="add-photo-text">추가</div>';
+      picsContainer.appendChild(addBtn);
+    }
+    
+    if (!canEdit) {
+      document.getElementById('workStatus').disabled = true;
+      document.getElementById('workCategory').disabled = true;
+      document.getElementById('locationInput').disabled = true;
+      document.getElementById('workType').disabled = true;
+      document.getElementById('startDate').disabled = true;
+      document.getElementById('startTime').disabled = true;
+      document.getElementById('endDate').disabled = true;
+      document.getElementById('endTime').disabled = true;
+      document.getElementById('workResources').disabled = true;
+      document.getElementById('workers').disabled = true;
+      document.getElementById('workDetail').disabled = true;
+      document.getElementById('managerName').disabled = true;
+    }
+    
+    document.getElementById('workPageTitle').textContent = canEdit ? '📝 작업 수정' : '📝 작업 상세';
+    document.getElementById('editModeIndicator').style.display = canEdit ? 'block' : 'none';
+    document.getElementById('workSubmitBtn').textContent = canEdit ? '💾 수정 저장' : '닫기';
+    document.getElementById('workSubmitBtn').disabled = !canEdit;
+    
+    setActivePage('work');
+    window.scrollTo(0, 0);
+  } else if (item.type === '기본점검' || item.type === '간단접수') {
+    showWorkDetailModal(index, canEdit);
+  }
+}
+
+// 간단한 작업 상세 모달
+function showWorkDetailModal(index, canEdit) {
+  const item = state.workItems[index];
+  let content = '';
+  
+  if (item.type === '기본점검') {
+    content = `
+      <div class="form-group">
+        <label class="form-label">점검 도로</label>
+        <input type="text" id="modalRoad" class="form-input" value="${item.road || ''}" ${canEdit ? '' : 'disabled'}>
+      </div>
+      <div class="form-group">
+        <label class="form-label">체크 항목</label>
+        <input type="number" id="modalChecked" class="form-input" value="${item.checked || 0}" ${canEdit ? '' : 'disabled'}>
+      </div>
+      <div class="form-group">
+        <label class="form-label">특이사항</label>
+        <textarea id="modalNote" class="form-textarea" ${canEdit ? '' : 'disabled'}>${item.note || ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">점검자</label>
+        <input type="text" class="form-input" value="${item.manager} (${item.dept})" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">점검 시각</label>
+        <input type="text" class="form-input" value="${item.startDate} ${item.time}" disabled>
+      </div>
+    `;
+  } else if (item.type === '간단접수') {
+    const photosHtml = item.photos && item.photos.length > 0 ? `
+      <div class="form-group">
+        <label class="form-label">현장 사진 (${item.photoCount}장)</label>
+        <div class="detail-photos">
+          ${item.photos.map(photo => `
+            <div class="detail-photo" onclick="showPhotoFullscreen('${photo}')">
+              <img src="${photo}" alt="사진">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+    
+    content = `
+      <div class="form-group">
+        <label class="form-label">작업 구분</label>
+        <input type="text" class="form-input" value="${item.category || '미지정'}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">작업 위치</label>
+        <input type="text" id="modalLocation" class="form-input" value="${item.location || ''}" ${canEdit ? '' : 'disabled'}>
+      </div>
+      ${photosHtml}
+      <div class="form-group">
+        <label class="form-label">담당자</label>
+        <input type="text" class="form-input" value="${item.manager} (${item.dept})" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">등록 시각</label>
+        <input type="text" class="form-input" value="${item.startDate} ${item.time}" disabled>
+      </div>
+    `;
+  }
+  
+  const modalHtml = `
+    <div id="detailModal" class="modal" style="display: flex;">
+      <div class="modal-content-large">
+        <div class="modal-header">
+          <div class="modal-title">${canEdit ? '작업 수정' : '작업 상세'}</div>
+          <button class="modal-close" onclick="closeDetailModal()">×</button>
+        </div>
+        <div class="modal-body">
+          ${content}
+        </div>
+        <div class="modal-footer">
+          ${canEdit ? `<button class="modal-btn modal-btn-primary" onclick="saveSimpleWorkEdit(${index})">💾 저장</button>` : ''}
+          ${state.isAdmin ? `<button class="modal-btn modal-btn-secondary" onclick="deleteWorkFromModal(${index})">🗑️ 삭제</button>` : ''}
+          <button class="modal-btn modal-btn-secondary" onclick="closeDetailModal()">닫기</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDetailModal() {
+  const modal = document.getElementById('detailModal');
+  if (modal) modal.remove();
+}
+
+function saveSimpleWorkEdit(index) {
+  const item = state.workItems[index];
+  
+  if (item.type === '기본점검') {
+    item.road = document.getElementById('modalRoad').value;
+    item.checked = parseInt(document.getElementById('modalChecked').value);
+    item.note = document.getElementById('modalNote').value;
+  } else if (item.type === '간단접수') {
+    item.location = document.getElementById('modalLocation').value;
+  }
+  
+  closeDetailModal();
+  updateWorkList();
+  alert('✓ 수정이 완료되었습니다!');
+}
+
+function deleteWorkFromModal(index) {
+  if (!confirm('이 작업을 삭제하시겠습니까?')) return;
+  
+  state.workItems.splice(index, 1);
+  closeDetailModal();
+  updateWorkList();
+  calculateMissionWorkCounts();
+  alert('✓ 작업이 삭제되었습니다.');
+}
+
+function showPhotoFullscreen(photoSrc) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal-content-large" style="max-width: 90%; max-height: 90%;">
+      <div class="modal-header">
+        <div class="modal-title">사진 보기</div>
+        <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+      </div>
+      <div class="modal-body" style="padding: 0;">
+        <img src="${photoSrc}" style="width: 100%; height: auto;">
+      </div>
+    </div>
+  `;
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.remove();
+  };
+  document.body.appendChild(modal);
+}
+
+// 작업 수정 취소
+function cancelWorkEdit() {
+  if (state.isEditMode) {
+    if (confirm('수정을 취소하시겠습니까?')) {
+      state.isEditMode = false;
+      state.editingWorkIndex = null;
+      resetWorkForm();
+      goToList();
+    }
+  } else {
+    goToHome();
+  }
+}
+
+function resetWorkForm() {
+  document.getElementById('workStatus').value = 'pending';
+  document.getElementById('workStatus').disabled = false;
+  document.getElementById('workCategory').value = '';
+  document.getElementById('workCategory').disabled = false;
+  document.getElementById('locationInput').value = '';
+  document.getElementById('locationInput').disabled = false;
+  document.getElementById('workType').value = '선택해주세요';
+  document.getElementById('workType').disabled = false;
+  document.getElementById('startDate').value = '';
+  document.getElementById('startDate').disabled = false;
+  document.getElementById('startTime').value = '';
+  document.getElementById('startTime').disabled = false;
+  document.getElementById('endDate').value = '';
+  document.getElementById('endDate').disabled = false;
+  document.getElementById('endTime').value = '';
+  document.getElementById('endTime').disabled = false;
+  document.getElementById('workResources').value = '';
+  document.getElementById('workResources').disabled = false;
+  document.getElementById('workers').value = '';
+  document.getElementById('workers').disabled = false;
+  document.getElementById('workDetail').value = '';
+  document.getElementById('workDetail').disabled = false;
+  document.getElementById('managerName').value = state.currentUser;
+  document.getElementById('managerName').disabled = false;
+  
+  photoCount = 0;
+  document.getElementById('num').textContent = '0';
+  document.getElementById('pics').innerHTML = '<div class="add-photo-btn" onclick="showPhotoModal()"><div class="add-photo-icon">📷</div><div class="add-photo-text">추가</div></div>';
+  
+  document.getElementById('workPageTitle').textContent = '📝 상세 작업 접수';
+  document.getElementById('editModeIndicator').style.display = 'none';
+  document.getElementById('workSubmitBtn').textContent = '📝 작업 등록';
+  document.getElementById('workSubmitBtn').disabled = false;
+}
+
+// 통계 업데이트 (유형별 통계 추가)
+function updateStats() {
+  const totalEl = document.getElementById('statTotalWorks');
+  const inspectionEl = document.getElementById('statInspections');
+  const simpleEl = document.getElementById('statSimple');
+  const missionsEl = document.getElementById('statMissions');
+  
+  if (totalEl) totalEl.textContent = state.workItems.length;
+  if (inspectionEl) {
+    const inspections = state.workItems.filter(item => item.type === '기본점검').length;
+    inspectionEl.textContent = inspections;
+  }
+  if (simpleEl) {
+    const simple = state.workItems.filter(item => item.type === '간단접수').length;
+    simpleEl.textContent = simple;
+  }
+  if (missionsEl) missionsEl.textContent = state.missionRecords.length;
+  
+  // 유형별 통계 업데이트
+  updateCategoryStats();
+  
+  // 차트 업데이트
+  updateAllCharts();
+}
+
+// 유형별 통계 업데이트
+function updateCategoryStats() {
+  const categories = ['시설', '교통', '도로'];
+  
+  categories.forEach(category => {
+    const items = state.workItems.filter(item => 
+      item.category === category && (item.type === '상세접수' || item.type === '간단접수')
+    );
+    
+    const total = items.length;
+    const completed = items.filter(item => item.status === 'completed').length;
+    const inprogress = items.filter(item => item.status === 'inprogress' || item.status === 'pending' || !item.status).length;
+    
+    const categoryName = category === '시설' ? 'Facility' : category === '교통' ? 'Traffic' : 'Road';
+    
+    const totalEl = document.getElementById(`stat${categoryName}Total`);
+    const completeEl = document.getElementById(`stat${categoryName}Complete`);
+    const progressEl = document.getElementById(`stat${categoryName}Progress`);
+    
+    if (totalEl) totalEl.textContent = total;
+    if (completeEl) completeEl.textContent = completed;
+    if (progressEl) progressEl.textContent = inprogress;
+  });
+}
+
+// 차트 전역 변수
+let deptChart = null;
+let typeChart = null;
+let statusChart = null;
+let currentStatsPeriod = 'daily'; // daily, weekly, monthly
+
+// 기간 필터
+function filterStatsPeriod(period) {
+  currentStatsPeriod = period;
+  
+  // 탭 활성화
+  document.querySelectorAll('.stats-filter-tab').forEach((tab, idx) => {
+    tab.classList.remove('active');
+    if ((period === 'daily' && idx === 0) ||
+        (period === 'weekly' && idx === 1) ||
+        (period === 'monthly' && idx === 2)) {
+      tab.classList.add('active');
+    }
+  });
+  
+  // 차트 업데이트
+  updateAllCharts();
+}
+
+// 기간별 데이터 필터링
+function getFilteredDataByPeriod() {
+  const now = new Date();
+  let startDate;
+  
+  if (currentStatsPeriod === 'daily') {
+    // 오늘
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (currentStatsPeriod === 'weekly') {
+    // 최근 7일
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else {
+    // 최근 30일
+    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  
+  return state.workItems.filter(item => {
+    const itemDate = new Date(item.timestamp);
+    return itemDate >= startDate;
+  });
+}
+
+// 부서별 차트 렌더링
+function renderDeptChart() {
+  const filteredData = getFilteredDataByPeriod();
+  const depts = {};
+  
+  filteredData.forEach(item => {
+    if (item.dept) {
+      depts[item.dept] = (depts[item.dept] || 0) + 1;
+    }
+  });
+  
+  const labels = Object.keys(depts);
+  const data = Object.values(depts);
+  const colors = ['#FF9800', '#4CAF50', '#2196F3', '#9C27B0'];
+  
+  const ctx = document.getElementById('deptChart');
+  if (!ctx) return;
+  
+  if (deptChart) {
+    deptChart.destroy();
+  }
+  
+  deptChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '작업 건수',
+        data: data,
+        backgroundColor: colors.slice(0, labels.length),
+        borderColor: colors.slice(0, labels.length).map(c => c.replace('0.8', '1')),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+}
+
+// 유형별 차트 렌더링
+function renderTypeChart() {
+  const filteredData = getFilteredDataByPeriod();
+  const categories = {};
+  
+  filteredData.forEach(item => {
+    if (item.category) {
+      categories[item.category] = (categories[item.category] || 0) + 1;
+    }
+  });
+  
+  const labels = Object.keys(categories);
+  const data = Object.values(categories);
+  const colors = ['#2196F3', '#FF9800', '#4CAF50'];
+  
+  const ctx = document.getElementById('typeChart');
+  if (!ctx) return;
+  
+  if (typeChart) {
+    typeChart.destroy();
+  }
+  
+  typeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels.map(l => l === '도로' ? '🛣️ 도로' : l === '교통' ? '🚦 교통' : '🏗️ 시설'),
+      datasets: [{
+        data: data,
+        backgroundColor: colors.slice(0, labels.length),
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 15,
+            font: {
+              size: 13
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// 처리현황 차트 렌더링
+function renderStatusChart() {
+  const filteredData = getFilteredDataByPeriod();
+  
+  // 일별 데이터 집계
+  const dateMap = {};
+  
+  filteredData.forEach(item => {
+    const date = item.startDate || item.timestamp.split('T')[0];
+    if (!dateMap[date]) {
+      dateMap[date] = { total: 0, completed: 0 };
+    }
+    dateMap[date].total++;
+    if (item.status === 'completed') {
+      dateMap[date].completed++;
+    }
+  });
+  
+  // 날짜 정렬
+  const dates = Object.keys(dateMap).sort();
+  const labels = dates.map(d => {
+    const parts = d.split('-');
+    return `${parts[1]}/${parts[2]}`;
+  });
+  
+  const totalData = dates.map(d => dateMap[d].total);
+  const completedData = dates.map(d => dateMap[d].completed);
+  
+  const ctx = document.getElementById('statusChart');
+  if (!ctx) return;
+  
+  if (statusChart) {
+    statusChart.destroy();
+  }
+  
+  statusChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '접수',
+          data: totalData,
+          borderColor: '#2196F3',
+          backgroundColor: 'rgba(33, 150, 243, 0.1)',
+          borderWidth: 3,
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: '완료',
+          data: completedData,
+          borderColor: '#4CAF50',
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+          borderWidth: 3,
+          tension: 0.3,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            padding: 15,
+            font: {
+              size: 13
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+}
+
+// 모든 차트 업데이트
+function updateAllCharts() {
+  renderDeptChart();
+  renderTypeChart();
+  renderStatusChart();
+}
+
+
+// 출동/복귀 기능
+function toggleMission() {
+  if (!state.currentMission) {
+    const now = new Date();
+    state.currentMission = {
+      date: `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`,
+      startTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+      startTimestamp: now.getTime(),
+      workCount: 0
+    };
+    
+    const btn = document.getElementById('missionBtn');
+    if (btn) {
+      btn.textContent = '🏠 복귀하기';
+      btn.classList.remove('start');
+      btn.classList.add('end');
+    }
+    
+    const info = document.getElementById('missionInfo');
+    if (info) {
+      info.classList.add('show');
+      document.getElementById('missionStartTime').textContent = state.currentMission.startTime;
+    }
+    
+    startMissionTimer();
+    alert('✓ 출동이 기록되었습니다!');
+    
+  } else {
+    const now = new Date();
+    state.currentMission.endTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    state.currentMission.endTimestamp = now.getTime();
+    
+    const duration = Math.floor((state.currentMission.endTimestamp - state.currentMission.startTimestamp) / 1000 / 60 / 60 * 10) / 10;
+    state.currentMission.duration = `${Math.floor(duration)}시간 ${Math.round((duration % 1) * 60)}분`;
+    state.currentMission.timestamp = new Date(state.currentMission.startTimestamp).toISOString();
+    
+    const worksDuringMission = state.workItems.filter(item => {
+      const itemTime = new Date(item.timestamp).getTime();
+      return itemTime >= state.currentMission.startTimestamp && itemTime <= state.currentMission.endTimestamp;
+    });
+    state.currentMission.workCount = worksDuringMission.length;
+    
+    state.missionRecords.push({...state.currentMission});
+    state.currentMission = null;
+    
+    stopMissionTimer();
+    
+    const btn = document.getElementById('missionBtn');
+    if (btn) {
+      btn.textContent = '🚨 출동하기';
+      btn.classList.remove('end');
+      btn.classList.add('start');
+    }
+    
+    const info = document.getElementById('missionInfo');
+    if (info) info.classList.remove('show');
+    
+    const timer = document.getElementById('missionTimer');
+    if (timer) timer.textContent = '00:00:00';
+    
+    updateMissionHistory();
+    alert('✓ 복귀가 기록되었습니다!');
+  }
+}
+
+function startMissionTimer() {
+  updateMissionTime();
+  state.missionTimer = setInterval(updateMissionTime, 1000);
+}
+
+function stopMissionTimer() {
+  if (state.missionTimer) {
+    clearInterval(state.missionTimer);
+    state.missionTimer = null;
+  }
+}
+
+function updateMissionTime() {
+  if (!state.currentMission) return;
+  
+  const now = Date.now();
+  const elapsed = Math.floor((now - state.currentMission.startTimestamp) / 1000);
+  
+  const hours = Math.floor(elapsed / 3600);
+  const minutes = Math.floor((elapsed % 3600) / 60);
+  const seconds = elapsed % 60;
+  
+  const timer = document.getElementById('missionTimer');
+  if (timer) {
+    timer.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  
+  const duration = document.getElementById('missionDuration');
+  if (duration) {
+    duration.textContent = `${hours}시간 ${minutes}분`;
+  }
+}
+
+function updateMissionHistory() {
+  const container = document.getElementById('missionHistory');
+  if (!container) return;
+  
+  if (state.missionRecords.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🚨</div>
+        <div class="empty-text">출동 기록이 없습니다</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = state.missionRecords.map(record => `
+    <div class="history-item" onclick="filterWorksByMission('${record.timestamp}', '${new Date(record.endTimestamp).toISOString()}')">
+      <div class="history-header">
+        <div class="history-date">${record.date}</div>
+        <div class="history-duration">${record.duration}</div>
+      </div>
+      <div class="history-times">
+        <div class="history-time-item">🚨 ${record.startTime}</div>
+        <div class="history-time-item">🏠 ${record.endTime}</div>
+      </div>
+      ${record.workCount > 0 ? `<div class="history-work-count">📝 작업 ${record.workCount}건 완료 (클릭하여 보기)</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// 근태관리 - 본인 근태 업데이트
+function updateMyAttendance() {
+  const userNameEl = document.getElementById('attendanceUserName');
+  const checkInEl = document.getElementById('myCheckInTime');
+  const checkOutEl = document.getElementById('myCheckOutTime');
+  const alcoholEl = document.getElementById('myAlcoholStatus');
+  
+  if (userNameEl) userNameEl.textContent = state.currentUser;
+  
+  const today = new Date().toISOString().split('T')[0].replace(/-/g, '.');
+  
+  const myRecord = state.allAttendance.find(r => 
+    r.employee === state.currentUser && r.date === today
+  );
+  
+  if (myRecord) {
+    state.myAttendance = myRecord;
+    if (checkInEl) checkInEl.textContent = myRecord.startTime;
+    if (checkOutEl) checkOutEl.textContent = myRecord.endTime || '미등록';
+    
+    if (alcoholEl) {
+      const statusClass = myRecord.alcoholTest === 'confirmed' ? 'confirmed' : 'detected';
+      const statusText = myRecord.alcoholTest === 'confirmed' ? '✓ 확인완료' : '✗ 적발';
+      alcoholEl.innerHTML = `<div class="alcohol-status ${statusClass}">${statusText}</div>`;
+    }
+  } else {
+    state.myAttendance = null;
+    if (checkInEl) checkInEl.textContent = '미등록';
+    if (checkOutEl) checkOutEl.textContent = '미등록';
+    if (alcoholEl) alcoholEl.innerHTML = '';
+  }
+  
+  if (state.isAdmin) {
+    document.getElementById('adminAttendanceSection').style.display = 'block';
+    updateAllAttendanceList();
+  } else {
+    document.getElementById('adminAttendanceSection').style.display = 'none';
+  }
+}
+
+// 전체 근태 목록 (관리자)
+function updateAllAttendanceList() {
+  const container = document.getElementById('allAttendanceList');
+  if (!container) return;
+  
+  if (state.allAttendance.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⏰</div>
+        <div class="empty-text">근태 기록이 없습니다</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = state.allAttendance.map((record, index) => `
+    <div class="attendance-item">
+      <div class="attendance-header">
+        <div class="attendance-name">
+          ${record.employee}
+          <span class="alcohol-badge ${record.alcoholTest}">${record.alcoholTest === 'confirmed' ? '✓ 확인완료' : '✗ 적발'}</span>
+          ${record.leaveType ? `<span class="leave-badge">${record.leaveType}</span>` : ''}
+        </div>
+        <div class="attendance-status ${record.status}">
+          ${record.status === 'working' ? '근무중' : '퇴근'}
+        </div>
+      </div>
+      <div class="attendance-times">
+        <div class="history-time-item">🏢 출근: ${record.startTime}</div>
+        ${record.endTime ? `<div class="history-time-item">🏠 퇴근: ${record.endTime}</div>` : ''}
+      </div>
+      ${record.duration ? `<div class="history-work-count">근무시간: ${record.duration}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// 출근 모달
+function showCheckInModal() {
+  const modalHtml = `
+    <div id="checkInModal" class="modal" style="display: flex;">
+      <div class="modal-content-large">
+        <div class="modal-header">
+          <div class="modal-title">🏢 출근하기</div>
+          <button class="modal-close" onclick="closeCheckInModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">담당자명</label>
+            <input type="text" class="form-input" value="${state.currentUser}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">출근 시각</label>
+            <input type="time" id="checkInTime" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">음주 측정</label>
+            <div class="radio-group">
+              <div class="radio-option selected" onclick="selectAlcoholTest(this, 'confirmed')">
+                <input type="radio" name="alcoholTest" value="confirmed" checked>
+                <div class="radio-label">
+                  <div class="radio-title">✓ 확인완료</div>
+                </div>
+              </div>
+              <div class="radio-option" onclick="selectAlcoholTest(this, 'detected')">
+                <input type="radio" name="alcoholTest" value="detected">
+                <div class="radio-label">
+                  <div class="radio-title">✗ 적발</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn-primary" onclick="saveCheckIn()">💾 출근 등록</button>
+          <button class="modal-btn modal-btn-secondary" onclick="closeCheckInModal()">취소</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  const now = new Date();
+  const timeInput = document.getElementById('checkInTime');
+  if (timeInput) {
+    timeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+}
+
+function closeCheckInModal() {
+  const modal = document.getElementById('checkInModal');
+  if (modal) modal.remove();
+}
+
+function saveCheckIn() {
+  const time = document.getElementById('checkInTime').value;
+  const alcoholTest = document.querySelector('input[name="alcoholTest"]:checked').value;
+  
+  if (!time) {
+    alert('⚠️ 출근 시각을 입력해주세요.');
+    return;
+  }
+  
+  if (alcoholTest === 'detected') {
+    alert('⚠️ 음주가 적발되어 출근이 불가합니다.');
+    closeCheckInModal();
+    return;
+  }
+  
+  const now = new Date();
+  const today = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+  
+  const record = {
+    employee: state.currentUser,
+    date: today,
+    startTime: time,
+    endTime: null,
+    alcoholTest: alcoholTest,
+    leaveType: null,
+    status: 'working',
+    timestamp: new Date(today + ' ' + time).toISOString()
+  };
+  
+  state.allAttendance = state.allAttendance.filter(r => 
+    !(r.employee === state.currentUser && r.date === today)
+  );
+  
+  state.allAttendance.unshift(record);
+  closeCheckInModal();
+  updateMyAttendance();
+  alert(`✓ 출근이 등록되었습니다!`);
+}
+
+// 퇴근 모달
+function showCheckOutModal() {
+  if (!state.myAttendance || state.myAttendance.endTime) {
+    alert('⚠️ 출근 기록이 없거나 이미 퇴근 처리되었습니다.');
+    return;
+  }
+  
+  const modalHtml = `
+    <div id="checkOutModal" class="modal" style="display: flex;">
+      <div class="modal-content-large">
+        <div class="modal-header">
+          <div class="modal-title">🏠 퇴근하기</div>
+          <button class="modal-close" onclick="closeCheckOutModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">담당자명</label>
+            <input type="text" class="form-input" value="${state.currentUser}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">출근 시각</label>
+            <input type="text" class="form-input" value="${state.myAttendance.startTime}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">퇴근 시각</label>
+            <input type="time" id="checkOutTime" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">퇴근 사유</label>
+            <select id="leaveType" class="form-select">
+              <option value="">정상 퇴근</option>
+              <option value="반차">반차</option>
+              <option value="조퇴">조퇴</option>
+              <option value="외출">외출</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn-primary" onclick="saveCheckOut()">💾 퇴근 등록</button>
+          <button class="modal-btn modal-btn-secondary" onclick="closeCheckOutModal()">취소</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  const now = new Date();
+  const timeInput = document.getElementById('checkOutTime');
+  if (timeInput) {
+    timeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+}
+
+function closeCheckOutModal() {
+  const modal = document.getElementById('checkOutModal');
+  if (modal) modal.remove();
+}
+
+function saveCheckOut() {
+  const time = document.getElementById('checkOutTime').value;
+  const leaveType = document.getElementById('leaveType').value;
+  
+  if (!time) {
+    alert('⚠️ 퇴근 시각을 입력해주세요.');
+    return;
+  }
+  
+  const startTimeObj = new Date(state.myAttendance.date + ' ' + state.myAttendance.startTime);
+  const endTimeObj = new Date(state.myAttendance.date + ' ' + time);
+  const duration = Math.floor((endTimeObj - startTimeObj) / 1000 / 60 / 60);
+  const minutes = Math.round(((endTimeObj - startTimeObj) / 1000 / 60) % 60);
+  
+  state.myAttendance.endTime = time;
+  state.myAttendance.leaveType = leaveType || null;
+  state.myAttendance.status = 'off';
+  state.myAttendance.duration = `${duration}시간 ${minutes}분`;
+  
+  closeCheckOutModal();
+  updateMyAttendance();
+  alert(`✓ 퇴근이 등록되었습니다!${leaveType ? ' (사유: ' + leaveType + ')' : ''}`);
+}
+
+function selectAlcoholTest(element, value) {
+  document.querySelectorAll('.radio-option').forEach(opt => {
+    opt.classList.remove('selected');
+    opt.querySelector('input').checked = false;
+  });
+  element.classList.add('selected');
+  element.querySelector('input').checked = true;
+}
+
+// 일일 점검일지 탭 전환
+function switchInspectionTab(index) {
+  state.currentInspectionTab = index;
+  
+  const tabs = document.querySelectorAll('.inspection-tab');
+  const contents = document.querySelectorAll('.inspection-content');
+  
+  tabs.forEach((tab, i) => {
+    tab.classList.toggle('active', i === index);
+  });
+  
+  contents.forEach((content, i) => {
+    content.classList.toggle('active', i === index);
+  });
+}
+
+// 체크리스트 토글
+function toggleCheck(el, type) {
+  const checkbox = el.querySelector('input[type="checkbox"]');
+  if (checkbox) {
+    checkbox.checked = !checkbox.checked;
+    if (checkbox.checked) {
+      el.classList.add('checked');
+    } else {
+      el.classList.remove('checked');
+    }
+    
+    if (type) {
+      updateInspectionSummary(type);
+    }
+  }
+}
+
+// 점검일지 요약 업데이트
+function updateInspectionSummary(type) {
+  const typeMap = {
+    'facility': { id: 'facilityInspection', summaryId: 'facilitySummary', total: 10 },
+    'site': { id: 'siteInspection', summaryId: 'siteSummary', total: 12 },
+    'equipment': { id: 'equipmentInspection', summaryId: 'equipmentSummary', total: 8 }
+  };
+  
+  const config = typeMap[type];
+  if (!config) return;
+  
+  const container = document.getElementById(config.id);
+  const checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
+  
+  state.inspectionChecked[type] = checked;
+  
+  const summaryEl = document.getElementById(config.summaryId);
+  if (summaryEl) {
+    summaryEl.textContent = `${checked}/${config.total}`;
+  }
+}
+
+// 일일 점검일지 제출
+function submitDailyInspection() {
+  const tabNames = ['시설점검', '현장점검', '장비점검'];
+  const types = ['facility', 'site', 'equipment'];
+  const currentType = types[state.currentInspectionTab];
+  const tabName = tabNames[state.currentInspectionTab];
+  
+  const checked = state.inspectionChecked[currentType] || 0;
+  
+  if (checked === 0) {
+    alert('⚠️ 최소 1개 이상의 항목을 체크해주세요.');
+    return;
+  }
+  
+  const noteEl = document.getElementById('dailyInspectionNote');
+  const managerEl = document.getElementById('dailyInspectionManager');
+  
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const date = now.toISOString().split('T')[0];
+  
+  const item = {
+    type: '일일점검',
+    inspectionType: tabName,
+    checked: checked,
+    manager: managerEl ? managerEl.value : state.currentUser,
+    dept: userDept,
+    time: time,
+    startDate: date,
+    photos: [],
+    memo: '',
+    note: noteEl ? noteEl.value : '',
+    timestamp: new Date().toISOString()
+  };
+  
+  if (uploadMode === 'instant') {
+    state.workItems.push(item);
+    calculateMissionWorkCounts();
+    alert(`✓ ${tabName}이 완료되었습니다!\n\n체크: ${checked} 항목`);
+  } else {
+    state.queueItems.push(item);
+    updateQueueBadge();
+    updateQueueList();
+    alert(`✓ ${tabName}이 대기열에 추가되었습니다!\n\n체크: ${checked} 항목`);
+  }
+  
+  // 체크리스트 초기화
+  const containers = document.querySelectorAll('.inspection-content');
+  containers[state.currentInspectionTab].querySelectorAll('.checklist-item').forEach(el => {
+    const checkbox = el.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = false;
+    el.classList.remove('checked');
+  });
+  
+  state.inspectionChecked[currentType] = 0;
+  updateInspectionSummary(currentType);
+  
+  if (noteEl) noteEl.value = '';
+  
+  goToHome();
+}
+
+// 기본 점검 제출
+function submitInspection() {
+  const roadEl = document.getElementById('inspectionRoad');
+  if (!roadEl || roadEl.value === '선택해주세요') {
+    alert('⚠️ 점검 도로를 선택해주세요.');
+    return;
+  }
+  
+  const checked = document.querySelectorAll('#inspection .checklist-item input:checked').length;
+  if (checked === 0) {
+    alert('⚠️ 최소 1개 이상의 항목을 체크해주세요.');
+    return;
+  }
+  
+  const managerEl = document.getElementById('inspectionManager');
+  const noteEl = document.getElementById('inspectionNote');
+  
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const date = now.toISOString().split('T')[0];
+  
+  const item = {
+    type: '기본점검',
+    category: '도로',
+    road: roadEl.value,
+    checked: checked,
+    manager: managerEl ? managerEl.value : state.currentUser,
+    dept: userDept,
+    time: time,
+    startDate: date,
+    photos: [],
+    memo: '',
+    note: noteEl ? noteEl.value : '',
+    timestamp: new Date().toISOString()
+  };
+  
+  if (uploadMode === 'instant') {
+    state.workItems.push(item);
+    calculateMissionWorkCounts();
+    alert(`✓ 기본 점검이 완료되었습니다!\n\n도로: ${roadEl.value}\n체크: ${checked}/8 항목`);
+  } else {
+    state.queueItems.push(item);
+    updateQueueBadge();
+    updateQueueList();
+    alert(`✓ 기본 점검이 대기열에 추가되었습니다!\n\n도로: ${roadEl.value}\n체크: ${checked}/8 항목`);
+  }
+  
+  document.querySelectorAll('#inspection .checklist-item').forEach(el => {
+    const checkbox = el.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = false;
+    el.classList.remove('checked');
+  });
+  roadEl.value = '선택해주세요';
+  if (noteEl) noteEl.value = '';
+  
+  goToHome();
+}
+
+// 상세 작업 제출
+function submitWork() {
+  if (state.isEditMode) {
+    const index = state.editingWorkIndex;
+    if (index === null || index === undefined) return;
+    
+    const item = state.workItems[index];
+    
+    item.status = document.getElementById('workStatus').value;
+    item.category = document.getElementById('workCategory').value;
+    item.location = document.getElementById('locationInput').value;
+    item.workType = document.getElementById('workType').value;
+    item.startDate = document.getElementById('startDate').value;
+    item.startTime = document.getElementById('startTime').value;
+    item.endDate = document.getElementById('endDate').value;
+    item.endTime = document.getElementById('endTime').value;
+    item.resources = document.getElementById('workResources').value;
+    item.workers = document.getElementById('workers').value;
+    item.detail = document.getElementById('workDetail').value;
+    item.manager = document.getElementById('managerName').value;
+    
+    item.photoCount = photoCount;
+    
+    state.isEditMode = false;
+    state.editingWorkIndex = null;
+    resetWorkForm();
+    calculateMissionWorkCounts();
+    updateWorkList();
+    alert('✓ 작업이 수정되었습니다!');
+    goToList();
+    return;
+  }
+  
+  const statusEl = document.getElementById('workStatus');
+  const categoryEl = document.getElementById('workCategory');
+  const locationEl = document.getElementById('locationInput');
+  const workTypeEl = document.getElementById('workType');
+  const startDateEl = document.getElementById('startDate');
+  const startTimeEl = document.getElementById('startTime');
+  const endDateEl = document.getElementById('endDate');
+  const endTimeEl = document.getElementById('endTime');
+  const resourcesEl = document.getElementById('workResources');
+  const workersEl = document.getElementById('workers');
+  const detailEl = document.getElementById('workDetail');
+  const managerEl = document.getElementById('managerName');
+  
+  if (!locationEl || !categoryEl || !workTypeEl || !detailEl || !managerEl) {
+    alert('⚠️ 필수 항목을 확인할 수 없습니다.');
+    return;
+  }
+  
+  if (!locationEl.value || !categoryEl.value || workTypeEl.value === '선택해주세요' || !detailEl.value) {
+    alert('⚠️ 필수 항목을 모두 입력해주세요.');
+    return;
+  }
+  
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  
+  const photos = [];
+  const picsContainer = document.getElementById('pics');
+  const photoElements = picsContainer.querySelectorAll('.photo img');
+  photoElements.forEach(img => {
+    photos.push(img.src);
+  });
+  
+  const item = {
+    type: '상세접수',
+    category: categoryEl.value,
+    status: statusEl ? statusEl.value : 'pending',
+    location: locationEl.value,
+    workType: workTypeEl.value,
+    startDate: startDateEl ? startDateEl.value : '',
+    startTime: startTimeEl ? startTimeEl.value : '',
+    endDate: endDateEl ? endDateEl.value : '',
+    endTime: endTimeEl ? endTimeEl.value : '',
+    resources: resourcesEl ? resourcesEl.value : '',
+    workers: workersEl ? workersEl.value : '',
+    detail: detailEl.value,
+    manager: managerEl.value,
+    dept: userDept,
+    photoCount: photoCount,
+    photos: photos,
+    memo: '',
+    timestamp: new Date().toISOString()
+  };
+  
+  if (uploadMode === 'instant') {
+    state.workItems.push(item);
+    calculateMissionWorkCounts();
+    alert('✓ 작업이 성공적으로 접수되었습니다!');
+  } else {
+    state.queueItems.push(item);
+    updateQueueBadge();
+    updateQueueList();
+    alert('✓ 작업이 대기열에 추가되었습니다!');
+  }
+  
+  resetWorkForm();
+  goToHome();
+}
+
+// 간단 접수 제출
+function submitSimple() {
+  if (photoCountSimple === 0) {
+    alert('⚠️ 사진을 최소 1장 첨부해주세요.');
+    return;
+  }
+  
+  const categoryEl = document.getElementById('simpleCategory');
+  const locationEl = document.getElementById('simpleLocation');
+  const managerEl = document.getElementById('simpleManagerName');
+  
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const date = now.toISOString().split('T')[0];
+  
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+  const timeStr = time;
+  const loc = locationEl ? locationEl.value || '위치 미입력' : '위치 미입력';
+  const category = categoryEl ? categoryEl.value || '' : '';
+  
+  const photos = [];
+  const picsContainer = document.getElementById('pics-simple');
+  const photoElements = picsContainer.querySelectorAll('.photo img');
+  photoElements.forEach(img => {
+    photos.push(img.src);
+  });
+  
+  const item = {
+    type: '간단접수',
+    category: category,
+    location: loc,
+    manager: managerEl ? managerEl.value : state.currentUser,
+    dept: userDept,
+    photoCount: photoCountSimple,
+    photos: photos,
+    time: time,
+    startDate: date,
+    memo: '',
+    timestamp: new Date().toISOString()
+  };
+  
+  if (uploadMode === 'instant') {
+    state.workItems.push(item);
+    calculateMissionWorkCounts();
+    alert('⚡ 간단 접수가 완료되었습니다!');
+  } else {
+    state.queueItems.push(item);
+    updateQueueBadge();
+    updateQueueList();
+    alert('⚡ 간단 접수가 대기열에 추가되었습니다!');
+  }
+  
+  if (categoryEl) categoryEl.value = '';
+  if (locationEl) locationEl.value = '';
+  photoCountSimple = 0;
+  document.getElementById('pics-simple').innerHTML = '<div class="add-photo-btn" onclick="showPhotoModalSimple()"><div class="add-photo-icon">📷</div><div class="add-photo-text">추가</div></div>';
+  
+  goToHome();
+}
+
+// 설정 저장
+function saveSettings() {
+  const managerEl = document.getElementById('defaultManagerName');
+  const deptEl = document.getElementById('defaultDept');
+  
+  if (!managerEl) return;
+  
+  const managerName = managerEl.value;
+  if (deptEl) userDept = deptEl.value;
+  
+  const managerNameEl = document.getElementById('managerName');
+  const simpleManagerEl = document.getElementById('simpleManagerName');
+  const inspectionManagerEl = document.getElementById('inspectionManager');
+  const dailyInspectionManagerEl = document.getElementById('dailyInspectionManager');
+  const userNameEl = document.getElementById('userName');
+  const userDeptEl = document.getElementById('userDept');
+  
+  if (managerNameEl) managerNameEl.value = managerName;
+  if (simpleManagerEl) simpleManagerEl.value = managerName;
+  if (inspectionManagerEl) inspectionManagerEl.value = managerName;
+  if (dailyInspectionManagerEl) dailyInspectionManagerEl.value = managerName;
+  if (userNameEl) {
+    userNameEl.innerHTML = managerName + ' 님';
+    if (state.isAdmin) {
+      userNameEl.innerHTML += '<span class="admin-indicator">관리자</span>';
+    }
+  }
+  if (userDeptEl) userDeptEl.textContent = userDept;
+  
+  state.currentUser = managerName;
+  state.userDept = userDept;
+  
+  updateMyAttendance();
+  
+  alert('✓ 설정이 저장되었습니다!');
+  goToHome();
+}
+
+function selectUploadMode(mode) {
+  uploadMode = mode;
+  state.uploadMode = mode;
+  
+  const options = document.querySelectorAll('#settings .radio-option');
+  if (options[0]) {
+    options[0].classList.toggle('selected', mode === 'instant');
+    options[0].querySelector('input').checked = mode === 'instant';
+  }
+  if (options[1]) {
+    options[1].classList.toggle('selected', mode === 'wifi');
+    options[1].querySelector('input').checked = mode === 'wifi';
+  }
+  
+  const warning = document.getElementById('wifiWarning');
+  if (warning) {
+    if (mode === 'wifi') {
+      warning.classList.add('show');
+    } else {
+      warning.classList.remove('show');
+    }
+  }
+  
+  updateQueueBadge();
+}
+
+function toggleAdminMode(isAdmin) {
+  state.isAdmin = isAdmin;
+  
+  const options = document.querySelectorAll('#settings .radio-option');
+  const adminOptions = Array.from(options).filter(opt => 
+    opt.querySelector('input[name="adminMode"]')
+  );
+  
+  adminOptions.forEach(opt => {
+    const input = opt.querySelector('input');
+    if (input.value === 'admin') {
+      opt.classList.toggle('selected', isAdmin);
+      input.checked = isAdmin;
+    } else {
+      opt.classList.toggle('selected', !isAdmin);
+      input.checked = !isAdmin;
+    }
+  });
+  
+  const userNameEl = document.getElementById('userName');
+  if (userNameEl) {
+    const currentText = userNameEl.textContent.replace(' 관리자', '');
+    if (isAdmin) {
+      userNameEl.innerHTML = currentText + '<span class="admin-indicator">관리자</span>';
+    } else {
+      userNameEl.textContent = currentText;
+    }
+  }
+  
+  updateMyAttendance();
+}
+
+// 사진 관련 함수들
+function showPhotoModal() {
+  if (photoCount >= 5) {
+    alert('최대 5장까지만 등록 가능합니다.');
+    return;
+  }
+  currentMode = 'work';
+  document.getElementById('photoModal').classList.add('show');
+}
+
+function showPhotoModalSimple() {
+  if (photoCountSimple >= 5) {
+    alert('최대 5장까지만 등록 가능합니다.');
+    return;
+  }
+  currentMode = 'simple';
+  document.getElementById('photoModal').classList.add('show');
+}
+
+function closePhotoModal() {
+  document.getElementById('photoModal').classList.remove('show');
+}
+
+function takePhoto() {
+  closePhotoModal();
+  addPhoto();
+}
+
+function selectPhoto() {
+  closePhotoModal();
+  addPhoto();
+}
+
+function addPhoto() {
+  if (currentMode === 'work') {
+    if (photoCount >= 5) return;
+    
+    photoCount++;
+    const container = document.getElementById('pics');
+    const photoDiv = document.createElement('div');
+    photoDiv.className = 'photo';
+    
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const loc = document.getElementById('locationInput')?.value || '위치 미입력';
+    const photoData = createPhotoWithWatermark(loc, `${dateStr} ${timeStr}`, userDept);
+    
+    photoDiv.innerHTML = `<img src="${photoData}"><button class="photo-remove" onclick="delPhoto(this)">×</button>`;
+    
+    const addBtn = container.querySelector('.add-photo-btn');
+    if (photoCount < 5) {
+      container.insertBefore(photoDiv, addBtn);
+    } else {
+      if (addBtn) container.removeChild(addBtn);
+      container.appendChild(photoDiv);
+    }
+    
+    document.getElementById('num').textContent = photoCount;
+    
+  } else {
+    if (photoCountSimple >= 5) return;
+    
+    photoCountSimple++;
+    const container = document.getElementById('pics-simple');
+    const photoDiv = document.createElement('div');
+    photoDiv.className = 'photo';
+    
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const loc = document.getElementById('simpleLocation')?.value || '위치 미입력';
+    const photoData = createPhotoWithWatermark(loc, `${dateStr} ${timeStr}`, userDept);
+    
+    photoDiv.innerHTML = `<img src="${photoData}"><button class="photo-remove" onclick="delPhotoSimple(this)">×</button>`;
+    
+    const addBtn = container.querySelector('.add-photo-btn');
+    if (photoCountSimple < 5) {
+      container.insertBefore(photoDiv, addBtn);
+    } else {
+      if (addBtn) container.removeChild(addBtn);
+      container.appendChild(photoDiv);
+    }
+  }
+}
+
+function delPhoto(btn) {
+  btn.parentElement.remove();
+  photoCount--;
+  document.getElementById('num').textContent = photoCount;
+  
+  const container = document.getElementById('pics');
+  if (!container.querySelector('.add-photo-btn')) {
+    const addBtn = document.createElement('div');
+    addBtn.className = 'add-photo-btn';
+    addBtn.onclick = showPhotoModal;
+    addBtn.innerHTML = '<div class="add-photo-icon">📷</div><div class="add-photo-text">추가</div>';
+    container.appendChild(addBtn);
+  }
+}
+
+function delPhotoSimple(btn) {
+  btn.parentElement.remove();
+  photoCountSimple--;
+  
+  const container = document.getElementById('pics-simple');
+  if (!container.querySelector('.add-photo-btn')) {
+    const addBtn = document.createElement('div');
+    addBtn.className = 'add-photo-btn';
+    addBtn.onclick = showPhotoModalSimple;
+    addBtn.innerHTML = '<div class="add-photo-icon">📷</div><div class="add-photo-text">추가</div>';
+    container.appendChild(addBtn);
+  }
+}
+
+// 페이지 네비게이션
+function goToHome() { setActivePage('home'); window.scrollTo(0, 0); }
+function goToWork() { 
+  if (!state.isEditMode) resetWorkForm();
+  setActivePage('work'); 
+  window.scrollTo(0, 0); 
+}
+function goToSimple() { setActivePage('simple'); window.scrollTo(0, 0); }
+function goToDailyInspection() { setActivePage('dailyInspection'); window.scrollTo(0, 0); }
+function goToSettings() { setActivePage('settings'); window.scrollTo(0, 0); }
+function goToQueue() { updateQueueList(); setActivePage('queue'); window.scrollTo(0, 0); }
+function goToList() { 
+  state.missionFilterActive = false;
+  filterWorks('all'); 
+  updatePeriodText(); 
+  updateWorkList(); 
+  setActivePage('list'); 
+  window.scrollTo(0, 0); 
+}
+function goToStats() { updateStats(); setActivePage('stats'); window.scrollTo(0, 0); }
+function goToInspection() { setActivePage('inspection'); window.scrollTo(0, 0); }
+function goToMission() { updateMissionHistory(); setActivePage('mission'); window.scrollTo(0, 0); }
+function goToAttendance() { updateMyAttendance(); setActivePage('attendance'); window.scrollTo(0, 0); }
+
+function setActivePage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+}
+
+// 초기화 실행
+window.onload = init;
+
+// 자체 테스트 로그
+
+// 일일점검 보고서 표시
+function showDailyInspectionReport(index) {
+  if (index < 0 || index >= state.workItems.length) return;
+  
+  const item = state.workItems[index];
+  if (item.type !== '일일점검') return;
+  
+  // 보고서 생성
+  const reportHtml = generateInspectionReport(item);
+  document.getElementById('reportContent').innerHTML = reportHtml;
+  
+  setActivePage('reportPage');
+  window.scrollTo(0, 0);
+}
+
+// 보고서 HTML 생성
+function generateInspectionReport(item) {
+  const inspectionTypes = {
+    '시설점검': {
+      icon: '🏗️',
+      color: '#FF9800',
+      items: [
+        '건물 외관 상태 확인',
+        '조명 시설 점검',
+        '출입문 및 비상구 점검',
+        '소방 시설 점검',
+        '배수 시설 확인',
+        '창문 및 유리 상태',
+        '전기 설비 점검',
+        '냉난방 시설 확인',
+        'CCTV 작동 상태',
+        '안전 장비 비치 확인'
+      ]
+    },
+    '현장점검': {
+      icon: '🚧',
+      color: '#4CAF50',
+      items: [
+        '도로 표면 상태 확인',
+        '중앙분리대 점검',
+        '방음벽 상태 확인',
+        '표지판 및 안내판 점검',
+        '도로 조명 점검',
+        '배수로 및 맨홀 점검',
+        '갓길 상태 확인',
+        '신호등 작동 상태',
+        'CCTV 작동 확인',
+        '가드레일 상태 점검',
+        '녹지대 관리 상태',
+        '안전 시설 전반 점검'
+      ]
+    },
+    '장비점검': {
+      icon: '🔧',
+      color: '#2196F3',
+      items: [
+        '중장비 외관 확인',
+        '연료 및 오일 점검',
+        '유압 시스템 확인',
+        '타이어 및 궤도 점검',
+        '경보 장치 작동 확인',
+        '전조등 및 후미등 점검',
+        '안전 장비 비치 확인',
+        '정비 이력 확인'
+      ]
+    }
+  };
+  
+  const config = inspectionTypes[item.inspectionType];
+  const totalItems = config.items.length;
+  const checkedPercentage = Math.round((item.checked / totalItems) * 100);
+  
+  return `
+    <div class="report-header">
+      <div class="report-title">${config.icon} ${item.inspectionType} 일일점검일지</div>
+      <div class="report-subtitle">고속도로 작업관리 시스템</div>
+      <div class="report-date">작성일: ${item.startDate} ${item.time}</div>
+    </div>
+    
+    <div class="report-section">
+      <div class="report-section-title">📊 점검 요약</div>
+      <div class="report-summary-grid">
+        <div class="report-summary-card" style="border-left-color: ${config.color};">
+          <div class="report-summary-label">총 점검 항목</div>
+          <div class="report-summary-value">${totalItems}개</div>
+        </div>
+        <div class="report-summary-card" style="border-left-color: #4CAF50;">
+          <div class="report-summary-label">체크 완료</div>
+          <div class="report-summary-value">${item.checked}개</div>
+        </div>
+        <div class="report-summary-card" style="border-left-color: ${checkedPercentage >= 80 ? '#4CAF50' : '#FF9800'};">
+          <div class="report-summary-label">완료율</div>
+          <div class="report-summary-value">${checkedPercentage}%</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="report-section">
+      <div class="report-section-title">✅ 점검 항목 상세</div>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="width: 60px;">번호</th>
+            <th>점검 항목</th>
+            <th style="width: 100px;">상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${config.items.map((checkItem, i) => `
+            <tr>
+              <td style="text-align: center;">${i + 1}</td>
+              <td>${checkItem}</td>
+              <td style="text-align: center;">
+                ${i < item.checked ? 
+                  '<span style="color: #4CAF50; font-weight: 700;">✓ 정상</span>' : 
+                  '<span style="color: #999;">- 미점검</span>'}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    
+    ${item.note ? `
+    <div class="report-section">
+      <div class="report-section-title">📝 특이사항</div>
+      <div style="padding: 20px; background: #F8F9FA; border-radius: 8px; line-height: 1.8;">
+        ${item.note}
+      </div>
+    </div>
+    ` : ''}
+    
+    <div class="report-footer">
+      <div class="report-signature">
+        <span class="report-signature-label">점검자:</span>
+        <span class="report-signature-value">${item.manager} (${item.dept})</span>
+      </div>
+    </div>
+  `;
+}
+
+
+// 작업(간단접수/상세접수) 보고서 표시
+function showWorkReport(index) {
+  if (index < 0 || index >= state.workItems.length) return;
+  
+  const item = state.workItems[index];
+  if (item.type !== '간단접수' && item.type !== '상세접수') return;
+  
+  const reportHtml = generateWorkReport(item);
+  document.getElementById('reportContent').innerHTML = reportHtml;
+  
+  setActivePage('reportPage');
+  window.scrollTo(0, 0);
+}
+
+// 작업 보고서 HTML 생성
+function generateWorkReport(item) {
+  const isSimple = item.type === '간단접수';
+  const title = isSimple ? '⚡ 간단 접수 보고서' : '📝 상세 작업 보고서';
+  const categoryIcon = item.category === '시설' ? '🏗️' : item.category === '교통' ? '🚦' : item.category === '도로' ? '🛣️' : '';
+  
+  // 사진 섹션 생성
+  let photoSection = '';
+  if (item.photos && item.photos.length > 0) {
+    photoSection = `
+      <div class="report-section">
+        <div class="report-section-title">📷 현장 사진 (${item.photos.length}장)</div>
+        <div class="report-photo-grid">
+          ${item.photos.map((photo, idx) => `
+            <div class="report-photo-item">
+              <img src="${photo}" class="report-photo-img" alt="현장사진 ${idx + 1}">
+              <div class="report-photo-info">
+                <div class="report-photo-label">사진 ${idx + 1}</div>
+                <div class="report-photo-value">${item.location || '위치 미입력'}</div>
+                <div class="report-photo-label" style="margin-top: 8px;">촬영일시</div>
+                <div class="report-photo-value">${item.startDate || ''} ${item.time || item.startTime || ''}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  
+  // 상세접수 전용 정보
+  let detailSection = '';
+  if (!isSimple) {
+    const statusText = item.status === 'completed' ? '완료' : item.status === 'inprogress' ? '진행중' : '예정';
+    const statusColor = item.status === 'completed' ? '#4CAF50' : item.status === 'inprogress' ? '#FF9800' : '#999';
+    
+    detailSection = `
+      <div class="report-section">
+        <div class="report-section-title">📋 작업 상세 정보</div>
+        <table class="report-table">
+          <tbody>
+            <tr>
+              <th style="width: 150px;">작업 상태</th>
+              <td><span style="color: ${statusColor}; font-weight: 700;">● ${statusText}</span></td>
+            </tr>
+            <tr>
+              <th>작업 유형</th>
+              <td>${item.workType || '-'}</td>
+            </tr>
+            ${item.startDate ? `
+            <tr>
+              <th>작업 기간</th>
+              <td>${item.startDate} ${item.startTime || ''} ~ ${item.endDate || ''} ${item.endTime || ''}</td>
+            </tr>
+            ` : ''}
+            ${item.resources ? `
+            <tr>
+              <th>투입 자원</th>
+              <td>${item.resources}</td>
+            </tr>
+            ` : ''}
+            ${item.workers ? `
+            <tr>
+              <th>투입 인력</th>
+              <td>${item.workers}</td>
+            </tr>
+            ` : ''}
+            ${item.detail ? `
+            <tr>
+              <th>작업 내용</th>
+              <td style="white-space: pre-wrap; line-height: 1.6;">${item.detail}</td>
+            </tr>
+            ` : ''}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+  
+  return `
+    <div class="report-header">
+      <div class="report-title">${title}</div>
+      <div class="report-subtitle">고속도로 작업관리 시스템</div>
+      <div class="report-date">작성일: ${item.startDate || ''} ${item.time || item.startTime || ''}</div>
+    </div>
+    
+    <div class="report-section">
+      <div class="report-section-title">📍 기본 정보</div>
+      <table class="report-table">
+        <tbody>
+          <tr>
+            <th style="width: 150px;">접수 유형</th>
+            <td>${isSimple ? '⚡ 간단 접수' : '📝 상세 접수'}</td>
+          </tr>
+          ${item.category ? `
+          <tr>
+            <th>작업 분류</th>
+            <td>${categoryIcon} ${item.category}</td>
+          </tr>
+          ` : ''}
+          <tr>
+            <th>작업 위치</th>
+            <td>${item.location || '위치 미입력'}</td>
+          </tr>
+          <tr>
+            <th>등록 일시</th>
+            <td>${item.startDate || ''} ${item.time || item.startTime || ''}</td>
+          </tr>
+          <tr>
+            <th>담당자</th>
+            <td>${item.manager} (${item.dept})</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    ${detailSection}
+    
+    ${photoSection}
+    
+    <div class="report-footer">
+      <div class="report-signature">
+        <span class="report-signature-label">담당자:</span>
+        <span class="report-signature-value">${item.manager} (${item.dept})</span>
+      </div>
+    </div>
+  `;
+}
+
+// 통합 보고서 생성
+function generateIntegratedReport() {
+  const startDateInput = document.getElementById('reportStartDate');
+  const endDateInput = document.getElementById('reportEndDate');
+  
+  if (!startDateInput.value || !endDateInput.value) {
+    alert('⚠️ 시작일과 종료일을 모두 선택해주세요.');
+    return;
+  }
+  
+  const startDate = startDateInput.value;
+  const endDate = endDateInput.value;
+  
+  if (startDate > endDate) {
+    alert('⚠️ 시작일이 종료일보다 늦을 수 없습니다.');
+    return;
+  }
+  
+  // 기간 내 작업 필터링
+  const filteredItems = state.workItems.filter(item => {
+    const itemDate = item.startDate || item.date;
+    return itemDate && itemDate >= startDate && itemDate <= endDate;
+  });
+  
+  // 출동 기록 필터링
+  const filteredMissions = state.missionRecords.filter(record => {
+    return record.date && record.date >= startDate && record.date <= endDate;
+  });
+  
+  // 유형별 분류
+  const dailyInspections = filteredItems.filter(item => item.type === '일일점검');
+  const workRecords = filteredItems.filter(item => item.type === '간단접수' || item.type === '상세접수');
+  
+  const reportHtml = generateIntegratedReportHTML(startDate, endDate, dailyInspections, filteredMissions, workRecords);
+  document.getElementById('reportContent').innerHTML = reportHtml;
+  
+  setActivePage('reportPage');
+  window.scrollTo(0, 0);
+}
+
+// 통합 보고서 HTML 생성
+function generateIntegratedReportHTML(startDate, endDate, inspections, missions, works) {
+  const totalCount = inspections.length + missions.length + works.length;
+  
+  return `
+    <div class="report-header">
+      <div class="report-title">📊 통합 작업 보고서</div>
+      <div class="report-subtitle">고속도로 작업관리 시스템</div>
+      <div class="report-date">보고 기간: ${startDate} ~ ${endDate}</div>
+    </div>
+    
+    <div class="report-section">
+      <div class="report-section-title">📈 기간별 작업 요약</div>
+      <div class="report-summary-grid">
+        <div class="report-summary-card" style="border-left-color: #2B7DE9;">
+          <div class="report-summary-label">총 작업 건수</div>
+          <div class="report-summary-value">${totalCount}건</div>
+        </div>
+        <div class="report-summary-card" style="border-left-color: #9C27B0;">
+          <div class="report-summary-label">일일점검</div>
+          <div class="report-summary-value">${inspections.length}건</div>
+        </div>
+        <div class="report-summary-card" style="border-left-color: #FF9800;">
+          <div class="report-summary-label">출동기록</div>
+          <div class="report-summary-value">${missions.length}건</div>
+        </div>
+        <div class="report-summary-card" style="border-left-color: #4CAF50;">
+          <div class="report-summary-label">작업기록</div>
+          <div class="report-summary-value">${works.length}건</div>
+        </div>
+      </div>
+    </div>
+    
+    ${inspections.length > 0 ? generateInspectionSection(inspections) : ''}
+    
+    ${missions.length > 0 ? generateMissionSection(missions) : ''}
+    
+    ${works.length > 0 ? generateWorkSection(works) : ''}
+    
+    ${totalCount === 0 ? '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">해당 기간에 등록된 작업이 없습니다</div></div>' : ''}
+    
+    <div class="report-footer">
+      <div class="report-signature">
+        <span class="report-signature-label">보고서 생성일:</span>
+        <span class="report-signature-value">${new Date().toISOString().split('T')[0]}</span>
+      </div>
+    </div>
+  `;
+}
+
+// 일일점검 섹션 생성
+function generateInspectionSection(inspections) {
+  return `
+    <hr class="report-divider">
+    
+    <div class="report-type-section">
+      <div class="report-type-header">
+        <div class="report-type-title">📋 일일점검일지</div>
+        <div class="report-type-count">총 ${inspections.length}건</div>
+      </div>
+      
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">번호</th>
+            <th style="width: 120px;">점검 유형</th>
+            <th style="width: 100px;">점검일</th>
+            <th style="width: 80px;">점검 항목</th>
+            <th>특이사항</th>
+            <th style="width: 120px;">점검자</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${inspections.map((item, idx) => {
+            const icon = item.inspectionType === '시설점검' ? '🏗️' : item.inspectionType === '현장점검' ? '🚧' : '🔧';
+            return `
+              <tr>
+                <td style="text-align: center;">${idx + 1}</td>
+                <td>${icon} ${item.inspectionType}</td>
+                <td>${item.startDate}</td>
+                <td style="text-align: center;">${item.checked}개 완료</td>
+                <td>${item.note || '-'}</td>
+                <td>${item.manager}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// 출동기록 섹션 생성
+function generateMissionSection(missions) {
+  return `
+    <hr class="report-divider">
+    
+    <div class="report-type-section">
+      <div class="report-type-header">
+        <div class="report-type-title">🚨 출동 기록</div>
+        <div class="report-type-count">총 ${missions.length}건</div>
+      </div>
+      
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">번호</th>
+            <th style="width: 120px;">출동일</th>
+            <th style="width: 80px;">출동시각</th>
+            <th style="width: 80px;">복귀시각</th>
+            <th style="width: 100px;">소요시간</th>
+            <th style="width: 80px;">처리건수</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${missions.map((record, idx) => `
+            <tr>
+              <td style="text-align: center;">${idx + 1}</td>
+              <td>${record.date}</td>
+              <td>${record.startTime}</td>
+              <td>${record.endTime || '-'}</td>
+              <td>${record.duration || '-'}</td>
+              <td style="text-align: center;">${record.workCount || 0}건</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// 작업기록 섹션 생성
+function generateWorkSection(works) {
+  return `
+    <hr class="report-divider">
+    
+    <div class="report-type-section">
+      <div class="report-type-header">
+        <div class="report-type-title">📝 작업 기록</div>
+        <div class="report-type-count">총 ${works.length}건</div>
+      </div>
+      
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">번호</th>
+            <th style="width: 100px;">접수유형</th>
+            <th>작업위치</th>
+            <th style="width: 120px;">작업내용</th>
+            <th style="width: 100px;">작업일</th>
+            <th style="width: 80px;">사진</th>
+            <th style="width: 100px;">담당자</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${works.map((item, idx) => {
+            const typeText = item.type === '간단접수' ? '⚡ 간단접수' : '📝 상세접수';
+            const categoryIcon = item.category === '시설' ? '🏗️' : item.category === '교통' ? '🚦' : item.category === '도로' ? '🛣️' : '';
+            return `
+              <tr>
+                <td style="text-align: center;">${idx + 1}</td>
+                <td>${typeText}</td>
+                <td>${categoryIcon} ${item.location || '-'}</td>
+                <td>${item.workType || item.detail || '-'}</td>
+                <td>${item.startDate || '-'}</td>
+                <td style="text-align: center;">${item.photoCount || 0}장</td>
+                <td>${item.manager}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// 보고서 인쇄
+function printReport() {
+  window.print();
+}
+
+// 보고서 닫기
+function closeReport() {
+  goToList();
+}
+
+console.log('=== 고속도로 작업관리 v11.0 시스템 점검 ===');
+console.log('✓ 더미 데이터 로드 완료 (유형 추가)');
+console.log('✓ 유형별 통계 (시설/교통/도로) 준비');
+console.log('✓ 처리현황 (완료/진행중) 표시 준비');
+console.log('✓ 일일 점검일지 (시설/현장/장비) 준비');
+console.log('✓ 사진 미리보기 기능 활성화');
+console.log('✓ 출동 시간대 작업 필터링 준비');
+console.log('✓ 근태관리 시스템 (음주체크, 퇴근사유) 준비');
+console.log('✓ 작업 수정 모드 (등록화면 동일) 준비');
+console.log('============================================');
+</script>
+
+
+<!-- 보고서 출력 페이지 -->
+<div id="reportPage" class="page">
+  <div class="top-bar no-print">
+    <button class="back-btn" onclick="closeReport()">←</button>
+    <div class="page-title">📄 점검 보고서</div>
+  </div>
+  
+  <div id="reportContent" class="report-container"></div>
+  
+  <div class="report-actions no-print">
+    <button class="report-btn report-btn-print" onclick="printReport()">🖨️ 인쇄하기</button>
+    <button class="report-btn report-btn-close" onclick="closeReport()">닫기</button>
+  </div>
+</div>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+        // 등록 성공!
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      }, function(err) {
+        // 등록 실패 :(
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
+</script>
+</body>
+</html>

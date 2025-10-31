@@ -1,0 +1,21 @@
+{
+  "name": "고속도로 작업관리 PWA",
+  "short_name": "작업관리",
+  "description": "고속도로 작업관리 v11.0 통합 보고서 앱",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#F5F7FA",
+  "theme_color": "#1E5EBA",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
