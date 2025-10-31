@@ -1,16 +1,16 @@
 // 1. 캐시 보물 상자 이름 정하기 (버전이 바뀔 때마다 숫자를 바꿔주면 새 파일로 업데이트돼요!)
-const CACHE_NAME = 'pwa-report-cache-v1';
+const CACHE_NAME = 'pwa-report-cache-v2';
 
 // 2. 미리 저장해 둘 필수 파일 목록
 const urlsToCache = [
-  '/', // 웹사이트 기본 주소
-  '/index.html', // 메인 파일
-  // index.html에서 사용하는 Chart.js도 캐시에 저장
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js', 
-  '/192192.png', // 아이콘 파일
-  '/512512.png' // 아이콘 파일
+  '/', // 웹사이트 기본 주소 (이것 하나만 슬래시를 유지합니다)
+  'index.html', // 🚨 슬래시 제거
+  'manifest.json', // 🚨 manifest.json 파일 추가
+  // index.html에서 사용하는 Chart.js는 외부 주소이므로 그대로 둡니다.
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js', 
+  '192192.png', // 🚨 슬래시 제거
+  '512512.png' // 🚨 슬래시 제거
 ];
-
 // 3. Service Worker 설치: 미리 저장할 파일들을 캐시에 넣어둡니다.
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -52,4 +52,5 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+
 });
